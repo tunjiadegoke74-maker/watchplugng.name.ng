@@ -20,7 +20,7 @@ const products: Array<Product> = [
     image: image('timepiece.png'),
     description: 'A quietly confident everyday watch, finished with a warm leather strap and a clean, versatile dial. It moves comfortably from workdays to weekends.',
     shortDescription: 'Classic proportions, warm leather, made for every day.',
-    price: 200000,
+    price: 10000,
   },
   {
     id: 2,
@@ -39,7 +39,7 @@ const products: Array<Product> = [
     image: image('scarf.png'),
     description: 'A soft, richly woven scarf with an easy drape and tactile fringe. Wear it loose, wrapped or layered over your favourite jersey.',
     shortDescription: 'Soft woven colour for match days and beyond.',
-    price: 120000,
+    price: 10000,
   },
   {
     id: 4,
