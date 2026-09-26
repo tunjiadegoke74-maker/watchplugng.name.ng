@@ -13,11 +13,11 @@ const config = defineConfig({
     tailwindcss(),
     netlify(),
     tanstackStart({
-  tsr: {
-    routesDirectory: './',
-    generatedRouteTree: './routeTree.gen.ts',
-  },
-}),
+      srcDirectory: '.',
+      router: {
+        routesDirectory: '.',
+      },
+    }),
     viteReact(),
   ],
 })
