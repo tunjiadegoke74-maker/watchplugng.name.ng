@@ -39,7 +39,7 @@ const products: Array<Product> = [
     image: image('scarf.png'),
     description: 'A soft, richly woven scarf with an easy drape and tactile fringe. Wear it loose, wrapped or layered over your favourite jersey.',
     shortDescription: 'Soft woven colour for match days and beyond.',
-    price: 10000,
+    price: 120000,
   },
   {
     id: 4,
