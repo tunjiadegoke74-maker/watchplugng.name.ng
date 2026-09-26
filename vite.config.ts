@@ -12,7 +12,12 @@ const config = defineConfig({
     }),
     tailwindcss(),
     netlify(),
-    tanstackStart(),
+    tanstackStart({
+  tsr: {
+    routesDirectory: './',
+    generatedRouteTree: './routeTree.gen.ts',
+  },
+}),
     viteReact(),
   ],
 })
