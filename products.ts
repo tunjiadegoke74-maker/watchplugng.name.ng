@@ -20,7 +20,7 @@ const products: Array<Product> = [
     image: image('timepiece.png'),
     description: 'A quietly confident everyday watch, finished with a warm leather strap and a clean, versatile dial. It moves comfortably from workdays to weekends.',
     shortDescription: 'Classic proportions, warm leather, made for every day.',
-    price: 20000,
+    price: 200000,
   },
   {
     id: 2,
