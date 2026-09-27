@@ -69,10 +69,8 @@ async function handleApi(request, env){
 
     if(path === 'me' && method === 'GET') return json(user);
 
-    // Workers Roster Route (Safe for existing schemas without created_at)
     if(path === 'workers' && method === 'GET'){
       if(user.role !== 'owner') return err('Owners only.', 403);
-
       const query = `
         SELECT 
           w.username, 
@@ -85,7 +83,6 @@ async function handleApi(request, env){
         GROUP BY w.username, w.name, w.role
         ORDER BY total_entries DESC, w.name ASC
       `;
-
       const { results } = await env.DB.prepare(query).all();
       return json(results || []);
     }
@@ -121,6 +118,7 @@ async function handleApi(request, env){
       const from = url.searchParams.get('from');
       const to = url.searchParams.get('to');
       const category = url.searchParams.get('category');
+      const payMethod = url.searchParams.get('payment_method');
 
       let query = 'SELECT * FROM sales WHERE 1=1';
       const params = [];
@@ -142,6 +140,10 @@ async function handleApi(request, env){
         query += ' AND category = ?';
         params.push(category);
       }
+      if(payMethod){
+        query += ' AND payment_method = ?';
+        params.push(payMethod);
+      }
 
       query += ' ORDER BY timestamp DESC';
       
@@ -153,13 +155,16 @@ async function handleApi(request, env){
     }
 
     if(path === 'sales' && method === 'POST'){
-      const { category, item, price, qty } = await request.json();
+      const { category, item, price, qty, payment_method, customer_name, customer_phone } = await request.json();
       if(!CATEGORIES.includes(category)) return err('Invalid category.');
       if(!item || typeof price !== 'number' || price < 0) return err('Missing or invalid fields.');
       const q = qty && qty > 0 ? qty : 1;
+      const pm = payment_method || 'Bank Transfer';
+      const cName = customer_name || 'Walk-in';
+      const cPhone = customer_phone || '';
       const id = uid();
-      await env.DB.prepare('INSERT INTO sales (id, worker_username, worker_name, category, item, price, qty, total, timestamp) VALUES (?,?,?,?,?,?,?,?,?)')
-        .bind(id, user.username, user.name, category, item, price, q, price*q, new Date().toISOString()).run();
+      await env.DB.prepare('INSERT INTO sales (id, worker_username, worker_name, category, item, price, qty, total, payment_method, customer_name, customer_phone, timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+        .bind(id, user.username, user.name, category, item, price, q, price*q, pm, cName, cPhone, new Date().toISOString()).run();
       return json({ ok: true, id });
     }
 
@@ -224,3 +229,4 @@ export default {
     return env.ASSETS.fetch(request);
   }
 };
+
