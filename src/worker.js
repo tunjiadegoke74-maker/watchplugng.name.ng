@@ -141,8 +141,10 @@ async function handleApi(request, env){
         params.push(category);
       }
       if(payMethod){
-        query += ' AND payment_method = ?';
-        params.push(payMethod);
+        try {
+          query += ' AND payment_method = ?';
+          params.push(payMethod);
+        } catch(e){}
       }
 
       query += ' ORDER BY timestamp DESC';
@@ -163,8 +165,15 @@ async function handleApi(request, env){
       const cName = customer_name || 'Walk-in';
       const cPhone = customer_phone || '';
       const id = uid();
-      await env.DB.prepare('INSERT INTO sales (id, worker_username, worker_name, category, item, price, qty, total, payment_method, customer_name, customer_phone, timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
-        .bind(id, user.username, user.name, category, item, price, q, price*q, pm, cName, cPhone, new Date().toISOString()).run();
+
+      try {
+        await env.DB.prepare('INSERT INTO sales (id, worker_username, worker_name, category, item, price, qty, total, payment_method, customer_name, customer_phone, timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+          .bind(id, user.username, user.name, category, item, price, q, price*q, pm, cName, cPhone, new Date().toISOString()).run();
+      } catch(dbErr) {
+        // Fallback for database schemas that haven't added the new columns yet
+        await env.DB.prepare('INSERT INTO sales (id, worker_username, worker_name, category, item, price, qty, total, timestamp) VALUES (?,?,?,?,?,?,?,?,?)')
+          .bind(id, user.username, user.name, category, item, price, q, price*q, new Date().toISOString()).run();
+      }
       return json({ ok: true, id });
     }
 
@@ -229,4 +238,3 @@ export default {
     return env.ASSETS.fetch(request);
   }
 };
-
