@@ -35,8 +35,8 @@ async function handleApi(request, env){
       if(!name || !username || !password) return err('Missing fields.');
       const salt = uid();
       const hash = await hashPassword(password, salt);
-      await env.DB.prepare('INSERT INTO workers (username, salt, hash, name, role, created_at) VALUES (?,?,?,?,?,?)')
-        .bind(username.toLowerCase(), salt, hash, name, 'owner', new Date().toISOString()).run();
+      await env.DB.prepare('INSERT INTO workers (username, salt, hash, name, role) VALUES (?,?,?,?,?)')
+        .bind(username.toLowerCase(), salt, hash, name, 'owner').run();
       return json({ ok: true });
     }
 
@@ -69,7 +69,7 @@ async function handleApi(request, env){
 
     if(path === 'me' && method === 'GET') return json(user);
 
-    // Workers Roster Route with Activity Stats
+    // Workers Roster Route (Safe for existing schemas without created_at)
     if(path === 'workers' && method === 'GET'){
       if(user.role !== 'owner') return err('Owners only.', 403);
 
@@ -77,13 +77,12 @@ async function handleApi(request, env){
         SELECT 
           w.username, 
           w.name, 
-          w.role, 
-          w.created_at,
+          w.role,
           COUNT(s.id) as total_entries,
           MAX(s.timestamp) as last_activity
         FROM workers w
         LEFT JOIN sales s ON w.username = s.worker_username
-        GROUP BY w.username, w.name, w.role, w.created_at
+        GROUP BY w.username, w.name, w.role
         ORDER BY total_entries DESC, w.name ASC
       `;
 
@@ -112,8 +111,8 @@ async function handleApi(request, env){
       if(exists) return err('That username is taken.');
       const salt = uid();
       const hash = await hashPassword(password, salt);
-      await env.DB.prepare('INSERT INTO workers (username, salt, hash, name, role, created_at) VALUES (?,?,?,?,?,?)')
-        .bind(uname, salt, hash, name, 'worker', new Date().toISOString()).run();
+      await env.DB.prepare('INSERT INTO workers (username, salt, hash, name, role) VALUES (?,?,?,?,?)')
+        .bind(uname, salt, hash, name, 'worker').run();
       return json({ ok: true });
     }
 
