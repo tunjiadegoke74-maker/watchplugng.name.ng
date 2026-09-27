@@ -1,75 +1,289 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sales Tracker</title>
+<title>WatchPlugNG — Sales Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{ --bg:#f6f5f2; --card:#fff; --text:#1a1a1a; --muted:#6b6b6b; --accent:#8a5a2f; --accent-text:#fff; --border:#e2ded8; --danger:#b33; }
-  @media (prefers-color-scheme: dark){
-    :root{ --bg:#161513; --card:#221f1c; --text:#f2f0ec; --muted:#a9a49c; --accent:#d9975c; --accent-text:#1a1a1a; --border:#3a3530; }
+  :root {
+    --ink: #241F16;
+    --ink-muted: #7A7361;
+    --paper: #FAF7F0;
+    --card: #FFFFFF;
+    --line: #E7DFCB;
+    --gold: #8B6F2F;
+    --gold-light: #C9A76A;
+    --gold-hover: #6F5824;
+    --input-bg: #FBF9F3;
+    --focus: rgba(139, 111, 47, 0.35);
+    --danger: #b33;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
-  #app{max-width:520px;margin:0 auto;padding:20px 16px 60px;}
-  h1{font-size:1.25rem;margin:0 0 4px;}
-  .sub{color:var(--muted);font-size:.85rem;margin-bottom:20px;}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
-  label{display:block;font-size:.8rem;color:var(--muted);margin:12px 0 4px;}
-  input,select{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:1rem;}
-  button{background:var(--accent);color:var(--accent-text);border:none;border-radius:8px;padding:11px 16px;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:14px;}
-  button.secondary{background:transparent;color:var(--text);border:1px solid var(--border);font-weight:500;}
-  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
-  .tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;}
-  .tab{padding:8px 14px;border-radius:20px;border:1px solid var(--border);font-size:.85rem;cursor:pointer;white-space:nowrap;}
-  .tab.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent);}
-  table{width:100%;border-collapse:collapse;font-size:.85rem;}
-  th,td{text-align:left;padding:7px 4px;border-bottom:1px solid var(--border);}
-  th{color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;}
-  .table-wrap{overflow-x:auto;}
-  .total-line{display:flex;justify-content:space-between;font-weight:700;margin-top:10px;padding-top:10px;border-top:2px solid var(--border);}
-  .err{color:var(--danger);font-size:.85rem;margin-top:8px;}
-  .empty{color:var(--muted);font-size:.85rem;text-align:center;padding:20px 0;}
-  .pwd-wrap { position: relative; width: 100%; }
-  .pwd-wrap input { padding-right: 40px; }
-  .pwd-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; font-size: 1rem; margin-top: 0; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+  }
+
+  #app {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+
+  /* Watch dial mark */
+  .dial {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+  .dial-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(139, 111, 47, 0.35);
+  }
+  .tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    border-radius: 1px;
+    transform-origin: 50% 50%;
+  }
+  .tick.major { height: 15px; background: var(--gold); }
+  .tick.minor { height: 8px; width: 1.5px; background: #C9BFA0; }
+  .hand {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 33px;
+    background: var(--gold);
+    border-radius: 1px;
+    transform-origin: 50% 100%;
+    transform: translate(-50%, -100%) rotate(0deg);
+    animation: sweep 9s linear infinite;
+  }
+  .pivot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes sweep {
+    from { transform: translate(-50%, -100%) rotate(0deg); }
+    to   { transform: translate(-50%, -100%) rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hand { animation: none; }
+  }
+
+  .screen {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1.wordmark {
+    margin: 0;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 26px;
+    text-align: center;
+  }
+  .subtitle {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink-muted);
+    text-align: center;
+  }
+
+  .card {
+    margin-top: 24px;
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; color: var(--ink-muted); }
+
+  input, select {
+    height: 46px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--input-bg);
+    color: var(--ink);
+    font-size: 15px;
+    font-family: 'Manrope', sans-serif;
+    padding: 0 14px;
+  }
+  input::placeholder { color: #A79F8B; }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--focus);
+  }
+
+  .password-wrap { position: relative; width: 100%; }
+  .password-wrap input { padding-right: 42px; }
+  .toggle-visibility {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--ink-muted);
+    border-radius: 8px;
+  }
+  .toggle-visibility:hover { color: var(--gold); }
+
+  button.submit {
+    margin-top: 4px;
+    height: 50px;
+    border-radius: 10px;
+    border: none;
+    background: var(--gold);
+    color: #FFFDF8;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button.submit:hover { background: var(--gold-hover); }
+
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .footnote {
+    margin-top: 30px;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    color: #B3AB94;
+    text-align: center;
+  }
+
+  /* App Dashboard Styles */
+  .dashboard { width: 100%; max-width: 520px; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .tabs { display: flex; gap: 8px; margin: 16px 0; overflow-x: auto; }
+  .tab { padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line); font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+  .tab.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  th { color: var(--ink-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+  .table-wrap { overflow-x: auto; }
+  .total-line { display: flex; justify-content: space-between; font-weight: 700; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--line); }
+  .err { color: var(--danger); font-size: 0.85rem; margin-top: 4px; }
+  .empty { color: var(--ink-muted); font-size: 0.85rem; text-align: center; padding: 20px 0; }
 </style>
 </head>
 <body>
+
 <div id="app"><div class="empty">Loading…</div></div>
+
 <script>
 const CATEGORIES = ['Wrist Watches','Cufflinks','Jersey Scarves','Sneakers','Jewellery'];
 const app = document.getElementById('app');
 let user = null, token = localStorage.getItem('st_token');
 let ownerTab = 'sales';
-const money = n => '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2});
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const catOpts = () => CATEGORIES.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+
+const money = function(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); };
+const esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+const catOpts = function(){ return CATEGORIES.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join(''); };
 
 function pwdInputHtml(id, placeholder){
   var ph = placeholder || 'Password';
-  return '<div class="pwd-wrap">' +
-    '<input id="' + id + '" type="password" placeholder="' + ph + '">' +
-    '<button type="button" class="pwd-toggle" onclick="togglePwd(\'' + id + '\', this)">👁️</button>' +
+  return '<div class="password-wrap">' +
+    '<input id="' + id + '" type="password" placeholder="' + ph + '" autocomplete="current-password" required>' +
+    '<button type="button" class="toggle-visibility" onclick="togglePwd(\'' + id + '\', this)" aria-label="Toggle password visibility">' +
+      '<svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>' +
+      '</svg>' +
+    '</button>' +
   '</div>';
 }
 
 function togglePwd(inputId, btn){
-  const el = document.getElementById(inputId);
-  if(el.type === 'password'){
-    el.type = 'text';
-    btn.textContent = '🙈';
+  var el = document.getElementById(inputId);
+  var isHidden = el.type === 'password';
+  el.type = isHidden ? 'text' : 'password';
+  var svg = btn.querySelector('svg');
+  if(isHidden){
+    svg.innerHTML = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.6 20.6 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a20.6 20.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23"/>';
   } else {
-    el.type = 'password';
-    btn.textContent = '👁️';
+    svg.innerHTML = '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>';
   }
 }
 
-async function api(path, opts={}){
-  const headers = { 'Content-Type':'application/json' };
+function brandDialHeader(){
+  return '<div class="dial" aria-hidden="true">' +
+    '<div class="dial-ring"></div>' +
+    '<div class="tick major" style="transform: rotate(0deg) translateY(-40px);"></div>' +
+    '<div class="tick major" style="transform: rotate(90deg) translateY(-40px);"></div>' +
+    '<div class="tick major" style="transform: rotate(180deg) translateY(-40px);"></div>' +
+    '<div class="tick major" style="transform: rotate(270deg) translateY(-40px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(30deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(60deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(120deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(150deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(210deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(240deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(300deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(330deg) translateY(-43px);"></div>' +
+    '<div class="hand"></div>' +
+    '<div class="pivot"></div>' +
+  '</div>' +
+  '<h1 class="wordmark">WatchPlugNG</h1>';
+}
+
+async function api(path, opts){
+  opts = opts || {};
+  var headers = { 'Content-Type':'application/json' };
   if(token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch('/api/' + path, { ...opts, headers });
-  const data = await res.json().catch(()=>({}));
+  var res = await fetch('/api/' + path, Object.assign({}, opts, { headers: headers }));
+  var data = await res.json().catch(function(){ return {}; });
   if(!res.ok) throw new Error(data.error || 'Something went wrong.');
   return data;
 }
@@ -81,8 +295,8 @@ async function boot(){
   }
   if(!user){
     try{
-      const { exists } = await api('has-workers');
-      if(!exists){ renderSetup(); return; }
+      var res = await api('has-workers');
+      if(!res.exists){ renderSetup(); return; }
     }catch(e){}
     renderLogin();
     return;
@@ -93,51 +307,59 @@ async function boot(){
 function render(){ user.role === 'owner' ? renderOwner() : renderWorker(); }
 
 function renderSetup(){
-  app.innerHTML = '<h1>Sales Tracker</h1>' +
-    '<div class="sub">First-time setup — create your owner account</div>' +
-    '<div class="card">' +
-      '<label>Your name</label><input id="s-name">' +
-      '<label>Username</label><input id="s-user">' +
-      '<label>Password</label>' + pwdInputHtml('s-pass') +
+  app.innerHTML = '<div class="screen">' +
+    brandDialHeader() +
+    '<div class="subtitle">First-time setup — create your owner account</div>' +
+    '<form class="card" id="setupForm">' +
+      '<div class="field"><label>Your name</label><input id="s-name" required></div>' +
+      '<div class="field"><label>Username</label><input id="s-user" required></div>' +
+      '<div class="field"><label>Password</label>' + pwdInputHtml('s-pass') + '</div>' +
       '<div id="s-err" class="err"></div>' +
-      '<button id="s-btn">Create owner account</button>' +
-    '</div>';
-  document.getElementById('s-btn').onclick = async () => {
-    const name = document.getElementById('s-name').value.trim();
-    const username = document.getElementById('s-user').value.trim();
-    const password = document.getElementById('s-pass').value;
-    const errEl = document.getElementById('s-err');
+      '<button type="submit" class="submit">Create owner account</button>' +
+    '</form>' +
+    '<div class="footnote">Every second, tracked.</div>' +
+  '</div>';
+
+  document.getElementById('setupForm').onsubmit = async function(e){
+    e.preventDefault();
+    var name = document.getElementById('s-name').value.trim();
+    var username = document.getElementById('s-user').value.trim();
+    var password = document.getElementById('s-pass').value;
+    var errEl = document.getElementById('s-err');
     if(!name || !username || !password){ errEl.textContent = 'Fill in all fields.'; return; }
     try{
-      await api('setup', { method:'POST', body: JSON.stringify({name, username, password}) });
-      const r = await api('login', { method:'POST', body: JSON.stringify({username, password}) });
+      await api('setup', { method:'POST', body: JSON.stringify({name: name, username: username, password: password}) });
+      var r = await api('login', { method:'POST', body: JSON.stringify({username: username, password: password}) });
       token = r.token; localStorage.setItem('st_token', token); user = r;
       render();
-    }catch(e){ errEl.textContent = e.message; }
+    }catch(err){ errEl.textContent = err.message; }
   };
 }
 
 function renderLogin(){
-  app.innerHTML = '<h1>Sales Tracker</h1>' +
-    '<div class="sub">Log in to record or view sales</div>' +
-    '<div class="card">' +
-      '<label>Username</label><input id="l-user" autocapitalize="none">' +
-      '<label>Password</label>' + pwdInputHtml('l-pass') +
+  app.innerHTML = '<div class="screen">' +
+    brandDialHeader() +
+    '<div class="subtitle">Log in to record or view sales</div>' +
+    '<form class="card" id="loginForm">' +
+      '<div class="field"><label for="l-user">Username</label><input id="l-user" placeholder="e.g. tunde.sales" autocapitalize="none" required></div>' +
+      '<div class="field"><label for="l-pass">Password</label>' + pwdInputHtml('l-pass') + '</div>' +
       '<div id="l-err" class="err"></div>' +
-      '<button id="l-btn">Log in</button>' +
-    '</div>';
-  const doLogin = async () => {
-    const username = document.getElementById('l-user').value.trim();
-    const password = document.getElementById('l-pass').value;
-    const errEl = document.getElementById('l-err');
+      '<button type="submit" class="submit">Log in</button>' +
+    '</form>' +
+    '<div class="footnote">Every second, tracked.</div>' +
+  '</div>';
+
+  document.getElementById('loginForm').onsubmit = async function(e){
+    e.preventDefault();
+    var username = document.getElementById('l-user').value.trim();
+    var password = document.getElementById('l-pass').value;
+    var errEl = document.getElementById('l-err');
     try{
-      const r = await api('login', { method:'POST', body: JSON.stringify({username, password}) });
+      var r = await api('login', { method:'POST', body: JSON.stringify({username: username, password: password}) });
       token = r.token; localStorage.setItem('st_token', token); user = r;
       render();
-    }catch(e){ errEl.textContent = e.message; }
+    }catch(err){ errEl.textContent = err.message; }
   };
-  document.getElementById('l-btn').onclick = doLogin;
-  document.getElementById('l-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 }
 
 async function logout(){
@@ -147,160 +369,173 @@ async function logout(){
 }
 
 function saleFormHtml(){
-  return '<label>Category</label><select id="w-cat">' + catOpts() + '</select>' +
-    '<label>Item</label><input id="w-item" placeholder="e.g. Silver cufflink set">' +
-    '<label>Price (per item)</label><input id="w-price" type="number" min="0" step="0.01">' +
-    '<label>Quantity</label><input id="w-qty" type="number" min="1" value="1">' +
+  return '<div class="field"><label>Category</label><select id="w-cat">' + catOpts() + '</select></div>' +
+    '<div class="field"><label>Item</label><input id="w-item" placeholder="e.g. Silver cufflink set"></div>' +
+    '<div class="field"><label>Price (per item)</label><input id="w-price" type="number" min="0" step="0.01"></div>' +
+    '<div class="field"><label>Quantity</label><input id="w-qty" type="number" min="1" value="1"></div>' +
     '<div id="w-err" class="err"></div>' +
-    '<button id="w-btn">Log sale</button>';
+    '<button type="button" class="submit" id="w-btn">Log sale</button>';
 }
 
 function wireSaleForm(onDone){
-  document.getElementById('w-btn').onclick = async () => {
-    const category = document.getElementById('w-cat').value;
-    const item = document.getElementById('w-item').value.trim();
-    const price = parseFloat(document.getElementById('w-price').value);
-    const qty = parseInt(document.getElementById('w-qty').value, 10) || 1;
-    const errEl = document.getElementById('w-err');
+  document.getElementById('w-btn').onclick = async function(){
+    var category = document.getElementById('w-cat').value;
+    var item = document.getElementById('w-item').value.trim();
+    var price = parseFloat(document.getElementById('w-price').value);
+    var qty = parseInt(document.getElementById('w-qty').value, 10) || 1;
+    var errEl = document.getElementById('w-err');
     if(!item || isNaN(price) || price < 0){ errEl.textContent = 'Fill in item and a valid price.'; return; }
     try{
-      await api('sales', { method:'POST', body: JSON.stringify({category, item, price, qty}) });
+      await api('sales', { method:'POST', body: JSON.stringify({category: category, item: item, price: price, qty: qty}) });
       onDone();
-    }catch(e){ errEl.textContent = e.message; }
+    }catch(err){ errEl.textContent = err.message; }
   };
 }
 
 async function renderWorker(){
-  app.innerHTML = '<div class="row"><h1>Hi, ' + esc(user.name) + '</h1><button class="secondary" id="lo-btn">Log out</button></div>' +
-    '<div class="sub">Log a sale</div>' +
+  app.innerHTML = '<div class="dashboard">' +
+    '<div class="row"><h1>Hi, ' + esc(user.name) + '</h1><button class="secondary" id="lo-btn">Log out</button></div>' +
+    '<div class="subtitle" style="text-align:left; margin-bottom: 12px;">Log a sale</div>' +
     '<div class="card">' + saleFormHtml() + '</div>' +
-    '<div class="sub">Your recent sales</div>' +
-    '<div class="card table-wrap" id="w-list"><div class="empty">Loading…</div></div>';
+    '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Your recent sales</div>' +
+    '<div class="card table-wrap" id="w-list"><div class="empty">Loading…</div></div>' +
+  '</div>';
+
   document.getElementById('lo-btn').onclick = logout;
   wireSaleForm(renderWorker);
   try{
-    const mine = await api('sales');
+    var mine = await api('sales');
     document.getElementById('w-list').innerHTML = mine.length ? salesTable(mine, false) : '<div class="empty">No sales logged yet.</div>';
   }catch(e){}
 }
 
 function salesTable(list, showWorker){
-  var rows = list.map(s => '<tr>' + (showWorker ? '<td>' + esc(s.worker_name) + '</td>' : '') + '<td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>').join('');
+  var rows = list.map(function(s){
+    return '<tr>' + (showWorker ? '<td>' + esc(s.worker_name) + '</td>' : '') + '<td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+  }).join('');
   return '<table><thead><tr>' + (showWorker ? '<th>Worker</th>' : '') + '<th>Item</th><th>Cat.</th><th>Qty</th><th>Total</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function stockTable(list){
-  var rows = list.map(s => '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + esc(s.vendor||'—') + '</td><td>' + s.qty + '</td><td>' + esc(s.added_by) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>').join('');
+  var rows = list.map(function(s){
+    return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + esc(s.vendor||'—') + '</td><td>' + s.qty + '</td><td>' + esc(s.added_by) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+  }).join('');
   return '<table><thead><tr><th>Item</th><th>Cat.</th><th>Vendor</th><th>Qty</th><th>Added by</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 async function renderOwner(){
-  app.innerHTML = '<div class="row"><h1>Owner Dashboard</h1><button class="secondary" id="lo-btn">Log out</button></div>' +
+  app.innerHTML = '<div class="dashboard">' +
+    '<div class="row"><h1>Owner Dashboard</h1><button class="secondary" id="lo-btn">Log out</button></div>' +
     '<div class="tabs">' +
       '<div class="tab ' + (ownerTab==='sales'?'active':'') + '" data-tab="sales">All Sales</div>' +
       '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" data-tab="stock">Stock Intake</div>' +
       '<div class="tab ' + (ownerTab==='workers'?'active':'') + '" data-tab="workers">Workers</div>' +
       '<div class="tab ' + (ownerTab==='log'?'active':'') + '" data-tab="log">Log a Sale</div>' +
     '</div>' +
-    '<div id="tab-content"><div class="empty">Loading…</div></div>';
+    '<div id="tab-content"><div class="empty">Loading…</div></div>' +
+  '</div>';
+
   document.getElementById('lo-btn').onclick = logout;
-  app.querySelectorAll('.tab').forEach(t => t.onclick = () => { ownerTab = t.dataset.tab; renderOwner(); });
+  app.querySelectorAll('.tab').forEach(function(t){
+    t.onclick = function(){ ownerTab = t.dataset.tab; renderOwner(); };
+  });
   await renderOwnerTab();
 }
 
 async function renderOwnerTab(){
-  const el = document.getElementById('tab-content');
+  var el = document.getElementById('tab-content');
   if(ownerTab === 'sales'){
     try{
-      const list = await api('sales');
-      const total = list.reduce((s,x) => s + (x.total||0), 0);
+      var list = await api('sales');
+      var total = list.reduce(function(s,x){ return s + (x.total||0); }, 0);
       el.innerHTML = '<div class="card table-wrap">' + (list.length ? salesTable(list, true) : '<div class="empty">No sales logged yet.</div>') +
         (list.length ? '<div class="total-line"><span>Total revenue</span><span>' + money(total) + '</span></div>' : '') + '</div>';
-    }catch(e){ el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+    }catch(err){ el.innerHTML = '<div class="err">' + err.message + '</div>'; }
   } else if(ownerTab === 'stock'){
     el.innerHTML = '<div class="card">' +
-        '<label>Category</label><select id="st-cat">' + catOpts() + '</select>' +
-        '<label>Item</label><input id="st-item" placeholder="e.g. Leather strap watches">' +
-        '<label>Vendor</label><input id="st-vendor" placeholder="e.g. Lagos Imports Ltd">' +
-        '<label>Quantity received</label><input id="st-qty" type="number" min="1" value="1">' +
-        '<label>Cost price (per item, optional)</label><input id="st-cost" type="number" min="0" step="0.01">' +
+        '<div class="field"><label>Category</label><select id="st-cat">' + catOpts() + '</select></div>' +
+        '<div class="field"><label>Item</label><input id="st-item" placeholder="e.g. Leather strap watches"></div>' +
+        '<div class="field"><label>Vendor</label><input id="st-vendor" placeholder="e.g. Lagos Imports Ltd"></div>' +
+        '<div class="field"><label>Quantity received</label><input id="st-qty" type="number" min="1" value="1"></div>' +
+        '<div class="field"><label>Cost price (per item, optional)</label><input id="st-cost" type="number" min="0" step="0.01"></div>' +
         '<div id="st-err" class="err"></div>' +
-        '<button id="st-btn">Add stock</button>' +
+        '<button type="button" class="submit" id="st-btn">Add stock</button>' +
       '</div>' +
-      '<div class="sub">Recent stock intake</div>' +
+      '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Recent stock intake</div>' +
       '<div class="card table-wrap" id="st-list"><div class="empty">Loading…</div></div>';
-    document.getElementById('st-btn').onclick = async () => {
-      const category = document.getElementById('st-cat').value;
-      const item = document.getElementById('st-item').value.trim();
-      const vendor = document.getElementById('st-vendor').value.trim();
-      const qty = parseInt(document.getElementById('st-qty').value, 10);
-      const cost_price = parseFloat(document.getElementById('st-cost').value);
-      const errEl = document.getElementById('st-err');
+
+    document.getElementById('st-btn').onclick = async function(){
+      var category = document.getElementById('st-cat').value;
+      var item = document.getElementById('st-item').value.trim();
+      var vendor = document.getElementById('st-vendor').value.trim();
+      var qty = parseInt(document.getElementById('st-qty').value, 10);
+      var cost_price = parseFloat(document.getElementById('st-cost').value);
+      var errEl = document.getElementById('st-err');
       if(!item || !qty || qty <= 0){ errEl.textContent = 'Fill in item and a valid quantity.'; return; }
       try{
-        await api('stock', { method:'POST', body: JSON.stringify({category, item, vendor, qty, cost_price: isNaN(cost_price)?null:cost_price}) });
+        await api('stock', { method:'POST', body: JSON.stringify({category: category, item: item, vendor: vendor, qty: qty, cost_price: isNaN(cost_price)?null:cost_price}) });
         renderOwnerTab();
-      }catch(e){ errEl.textContent = e.message; }
+      }catch(err){ errEl.textContent = err.message; }
     };
     try{
-      const list = await api('stock');
-      document.getElementById('st-list').innerHTML = list.length ? stockTable(list) : '<div class="empty">No stock added yet.</div>';
+      var stockList = await api('stock');
+      document.getElementById('st-list').innerHTML = stockList.length ? stockTable(stockList) : '<div class="empty">No stock added yet.</div>';
     }catch(e){}
   } else if(ownerTab === 'workers'){
     el.innerHTML = '<div class="card" id="wk-existing"><div class="empty">Loading…</div></div>' +
-      '<div class="sub">Add a worker</div>' +
+      '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Add a worker</div>' +
       '<div class="card">' +
-        '<label>Name</label><input id="nw-name">' +
-        '<label>Username</label><input id="nw-user">' +
-        '<label>Password</label>' + pwdInputHtml('nw-pass') +
+        '<div class="field"><label>Name</label><input id="nw-name"></div>' +
+        '<div class="field"><label>Username</label><input id="nw-user"></div>' +
+        '<div class="field"><label>Password</label>' + pwdInputHtml('nw-pass') + '</div>' +
         '<div id="nw-err" class="err"></div>' +
-        '<button id="nw-btn">Add worker</button>' +
+        '<button type="button" class="submit" id="nw-btn">Add worker</button>' +
       '</div>' +
-      '<div class="sub">Reset worker password</div>' +
+      '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Reset worker password</div>' +
       '<div class="card">' +
-        '<label>Worker Username</label><input id="rw-user">' +
-        '<label>New Password</label>' + pwdInputHtml('rw-pass', 'Enter new password') +
+        '<div class="field"><label>Worker Username</label><input id="rw-user"></div>' +
+        '<div class="field"><label>New Password</label>' + pwdInputHtml('rw-pass', 'Enter new password') + '</div>' +
         '<div id="rw-err" class="err"></div>' +
-        '<div id="rw-msg" style="color:var(--accent);font-size:.85rem;margin-top:8px;"></div>' +
-        '<button id="rw-btn">Reset password</button>' +
+        '<div id="rw-msg" style="color:var(--gold);font-size:.85rem;margin-top:8px;"></div>' +
+        '<button type="button" class="submit" id="rw-btn">Reset password</button>' +
       '</div>';
-      
-    document.getElementById('nw-btn').onclick = async () => {
-      const name = document.getElementById('nw-name').value.trim();
-      const username = document.getElementById('nw-user').value.trim();
-      const password = document.getElementById('nw-pass').value;
-      const errEl = document.getElementById('nw-err');
+
+    document.getElementById('nw-btn').onclick = async function(){
+      var name = document.getElementById('nw-name').value.trim();
+      var username = document.getElementById('nw-user').value.trim();
+      var password = document.getElementById('nw-pass').value;
+      var errEl = document.getElementById('nw-err');
       if(!name || !username || !password){ errEl.textContent = 'Fill in all fields.'; return; }
       try{
-        await api('workers', { method:'POST', body: JSON.stringify({name, username, password}) });
+        await api('workers', { method:'POST', body: JSON.stringify({name: name, username: username, password: password}) });
         renderOwnerTab();
-      }catch(e){ errEl.textContent = e.message; }
+      }catch(err){ errEl.textContent = err.message; }
     };
 
-    document.getElementById('rw-btn').onclick = async () => {
-      const username = document.getElementById('rw-user').value.trim();
-      const password = document.getElementById('rw-pass').value;
-      const errEl = document.getElementById('rw-err');
-      const msgEl = document.getElementById('rw-msg');
+    document.getElementById('rw-btn').onclick = async function(){
+      var username = document.getElementById('rw-user').value.trim();
+      var password = document.getElementById('rw-pass').value;
+      var errEl = document.getElementById('rw-err');
+      var msgEl = document.getElementById('rw-msg');
       errEl.textContent = ''; msgEl.textContent = '';
       if(!username || !password){ errEl.textContent = 'Fill in both username and new password.'; return; }
       try{
-        await api('workers/reset-password', { method:'POST', body: JSON.stringify({username, password}) });
+        await api('workers/reset-password', { method:'POST', body: JSON.stringify({username: username, password: password}) });
         msgEl.textContent = 'Password for "' + username + '" updated successfully.';
         document.getElementById('rw-user').value = '';
         document.getElementById('rw-pass').value = '';
-      }catch(e){ errEl.textContent = e.message; }
+      }catch(err){ errEl.textContent = err.message; }
     };
 
     try{
-      const list = await api('workers');
-      const staff = list.filter(w => w.role === 'worker');
-      document.getElementById('wk-existing').innerHTML = '<div style="color:var(--muted);margin-bottom:8px;">Existing workers</div>' +
-        (staff.length ? staff.map(w => '<div class="row" style="padding:6px 0;">' + esc(w.name) + ' (' + esc(w.username) + ')</div>').join('') : '<div class="empty">No workers added yet.</div>');
+      var workerList = await api('workers');
+      var staff = workerList.filter(function(w){ return w.role === 'worker'; });
+      document.getElementById('wk-existing').innerHTML = '<div style="color:var(--ink-muted);margin-bottom:8px;font-weight:600;">Existing workers</div>' +
+        (staff.length ? staff.map(function(w){ return '<div class="row" style="padding:6px 0;">' + esc(w.name) + ' (' + esc(w.username) + ')</div>'; }).join('') : '<div class="empty">No workers added yet.</div>');
     }catch(e){}
   } else {
     el.innerHTML = '<div class="card">' + saleFormHtml() + '</div>';
-    wireSaleForm(() => { ownerTab = 'sales'; renderOwner(); });
+    wireSaleForm(function(){ ownerTab = 'sales'; renderOwner(); });
   }
 }
 
