@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WatchPlugNG — Sales Tracker</title>
+<title>WatchPlugNG — Sales & Stock Reports</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,7 +42,6 @@
     padding: 32px 20px;
   }
 
-  /* Watch dial mark */
   .dial {
     position: relative;
     width: 100px;
@@ -91,9 +90,6 @@
   @keyframes sweep {
     from { transform: translate(-50%, -100%) rotate(0deg); }
     to   { transform: translate(-50%, -100%) rotate(360deg); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .hand { animation: none; }
   }
 
   .screen {
@@ -169,17 +165,16 @@
     color: var(--ink-muted);
     border-radius: 8px;
   }
-  .toggle-visibility:hover { color: var(--gold); }
 
   button.submit {
     margin-top: 4px;
-    height: 50px;
+    height: 46px;
     border-radius: 10px;
     border: none;
     background: var(--gold);
     color: #FFFDF8;
     font-family: 'Manrope', sans-serif;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     transition: background 0.15s ease;
@@ -196,16 +191,13 @@
     cursor: pointer;
   }
 
-  .footnote {
-    margin-top: 30px;
-    font-size: 11px;
-    letter-spacing: 0.3px;
-    color: #B3AB94;
-    text-align: center;
-  }
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--input-bg); cursor: pointer; }
+  .btn-sm.active { background: var(--gold); color: white; border-color: var(--gold); }
 
-  /* App Dashboard Styles */
-  .dashboard { width: 100%; max-width: 520px; }
+  .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .dashboard { width: 100%; max-width: 600px; }
   .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .tabs { display: flex; gap: 8px; margin: 16px 0; overflow-x: auto; }
   .tab { padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line); font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
@@ -214,7 +206,7 @@
   th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); }
   th { color: var(--ink-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
   .table-wrap { overflow-x: auto; }
-  .total-line { display: flex; justify-content: space-between; font-weight: 700; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--line); }
+  .total-card { background: var(--input-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--line); margin-top: 10px; display: flex; justify-content: space-between; font-weight: 700; }
   .err { color: var(--danger); font-size: 0.85rem; margin-top: 4px; }
   .empty { color: var(--ink-muted); font-size: 0.85rem; text-align: center; padding: 20px 0; }
 </style>
@@ -227,20 +219,18 @@
 const CATEGORIES = ['Wrist Watches','Cufflinks','Jersey Scarves','Sneakers','Jewellery'];
 const app = document.getElementById('app');
 let user = null, token = localStorage.getItem('st_token');
-let ownerTab = 'sales';
+let ownerTab = 'reports';
 
 const money = function(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); };
 const esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
-const catOpts = function(){ return CATEGORIES.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join(''); };
+const catOpts = function(){ return '<option value="">All Categories</option>' + CATEGORIES.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join(''); };
 
 function pwdInputHtml(id, placeholder){
   var ph = placeholder || 'Password';
   return '<div class="password-wrap">' +
-    '<input id="' + id + '" type="password" placeholder="' + ph + '" autocomplete="current-password" required>' +
-    '<button type="button" class="toggle-visibility" onclick="togglePwd(\'' + id + '\', this)" aria-label="Toggle password visibility">' +
-      '<svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>' +
-      '</svg>' +
+    '<input id="' + id + '" type="password" placeholder="' + ph + '" required>' +
+    '<button type="button" class="toggle-visibility" onclick="togglePwd(\'' + id + '\', this)">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>' +
     '</button>' +
   '</div>';
 }
@@ -249,33 +239,9 @@ function togglePwd(inputId, btn){
   var el = document.getElementById(inputId);
   var isHidden = el.type === 'password';
   el.type = isHidden ? 'text' : 'password';
-  var svg = btn.querySelector('svg');
-  if(isHidden){
-    svg.innerHTML = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.6 20.6 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a20.6 20.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23"/>';
-  } else {
-    svg.innerHTML = '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>';
-  }
-}
-
-function brandDialHeader(){
-  return '<div class="dial" aria-hidden="true">' +
-    '<div class="dial-ring"></div>' +
-    '<div class="tick major" style="transform: rotate(0deg) translateY(-40px);"></div>' +
-    '<div class="tick major" style="transform: rotate(90deg) translateY(-40px);"></div>' +
-    '<div class="tick major" style="transform: rotate(180deg) translateY(-40px);"></div>' +
-    '<div class="tick major" style="transform: rotate(270deg) translateY(-40px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(30deg) translateY(-43px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(60deg) translateY(-43px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(120deg) translateY(-43px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(150deg) translateY(-43px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(210deg) translateY(-43px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(240deg) translateY(-43px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(300deg) translateY(-43px);"></div>' +
-    '<div class="tick minor" style="transform: rotate(330deg) translateY(-43px);"></div>' +
-    '<div class="hand"></div>' +
-    '<div class="pivot"></div>' +
-  '</div>' +
-  '<h1 class="wordmark">WatchPlugNG</h1>';
+  btn.querySelector('svg').innerHTML = isHidden 
+    ? '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.6 20.6 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a20.6 20.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>';
 }
 
 async function api(path, opts){
@@ -306,59 +272,25 @@ async function boot(){
 
 function render(){ user.role === 'owner' ? renderOwner() : renderWorker(); }
 
-function renderSetup(){
-  app.innerHTML = '<div class="screen">' +
-    brandDialHeader() +
-    '<div class="subtitle">First-time setup — create your owner account</div>' +
-    '<form class="card" id="setupForm">' +
-      '<div class="field"><label>Your name</label><input id="s-name" required></div>' +
-      '<div class="field"><label>Username</label><input id="s-user" required></div>' +
-      '<div class="field"><label>Password</label>' + pwdInputHtml('s-pass') + '</div>' +
-      '<div id="s-err" class="err"></div>' +
-      '<button type="submit" class="submit">Create owner account</button>' +
-    '</form>' +
-    '<div class="footnote">Every second, tracked.</div>' +
-  '</div>';
-
-  document.getElementById('setupForm').onsubmit = async function(e){
-    e.preventDefault();
-    var name = document.getElementById('s-name').value.trim();
-    var username = document.getElementById('s-user').value.trim();
-    var password = document.getElementById('s-pass').value;
-    var errEl = document.getElementById('s-err');
-    if(!name || !username || !password){ errEl.textContent = 'Fill in all fields.'; return; }
-    try{
-      await api('setup', { method:'POST', body: JSON.stringify({name: name, username: username, password: password}) });
-      var r = await api('login', { method:'POST', body: JSON.stringify({username: username, password: password}) });
-      token = r.token; localStorage.setItem('st_token', token); user = r;
-      render();
-    }catch(err){ errEl.textContent = err.message; }
-  };
-}
-
 function renderLogin(){
   app.innerHTML = '<div class="screen">' +
-    brandDialHeader() +
-    '<div class="subtitle">Log in to record or view sales</div>' +
+    '<h1 class="wordmark">WatchPlugNG</h1>' +
+    '<div class="subtitle">Log in to view reports or log sales</div>' +
     '<form class="card" id="loginForm">' +
-      '<div class="field"><label for="l-user">Username</label><input id="l-user" placeholder="e.g. tunde.sales" autocapitalize="none" required></div>' +
-      '<div class="field"><label for="l-pass">Password</label>' + pwdInputHtml('l-pass') + '</div>' +
+      '<div class="field"><label>Username</label><input id="l-user" required></div>' +
+      '<div class="field"><label>Password</label>' + pwdInputHtml('l-pass') + '</div>' +
       '<div id="l-err" class="err"></div>' +
       '<button type="submit" class="submit">Log in</button>' +
     '</form>' +
-    '<div class="footnote">Every second, tracked.</div>' +
   '</div>';
 
   document.getElementById('loginForm').onsubmit = async function(e){
     e.preventDefault();
-    var username = document.getElementById('l-user').value.trim();
-    var password = document.getElementById('l-pass').value;
-    var errEl = document.getElementById('l-err');
     try{
-      var r = await api('login', { method:'POST', body: JSON.stringify({username: username, password: password}) });
+      var r = await api('login', { method:'POST', body: JSON.stringify({username: document.getElementById('l-user').value.trim(), password: document.getElementById('l-pass').value}) });
       token = r.token; localStorage.setItem('st_token', token); user = r;
       render();
-    }catch(err){ errEl.textContent = err.message; }
+    }catch(err){ document.getElementById('l-err').textContent = err.message; }
   };
 }
 
@@ -368,175 +300,143 @@ async function logout(){
   renderLogin();
 }
 
-function saleFormHtml(){
-  return '<div class="field"><label>Category</label><select id="w-cat">' + catOpts() + '</select></div>' +
-    '<div class="field"><label>Item</label><input id="w-item" placeholder="e.g. Silver cufflink set"></div>' +
-    '<div class="field"><label>Price (per item)</label><input id="w-price" type="number" min="0" step="0.01"></div>' +
-    '<div class="field"><label>Quantity</label><input id="w-qty" type="number" min="1" value="1"></div>' +
-    '<div id="w-err" class="err"></div>' +
-    '<button type="button" class="submit" id="w-btn">Log sale</button>';
-}
-
-function wireSaleForm(onDone){
-  document.getElementById('w-btn').onclick = async function(){
-    var category = document.getElementById('w-cat').value;
-    var item = document.getElementById('w-item').value.trim();
-    var price = parseFloat(document.getElementById('w-price').value);
-    var qty = parseInt(document.getElementById('w-qty').value, 10) || 1;
-    var errEl = document.getElementById('w-err');
-    if(!item || isNaN(price) || price < 0){ errEl.textContent = 'Fill in item and a valid price.'; return; }
-    try{
-      await api('sales', { method:'POST', body: JSON.stringify({category: category, item: item, price: price, qty: qty}) });
-      onDone();
-    }catch(err){ errEl.textContent = err.message; }
-  };
-}
-
-async function renderWorker(){
-  app.innerHTML = '<div class="dashboard">' +
-    '<div class="row"><h1>Hi, ' + esc(user.name) + '</h1><button class="secondary" id="lo-btn">Log out</button></div>' +
-    '<div class="subtitle" style="text-align:left; margin-bottom: 12px;">Log a sale</div>' +
-    '<div class="card">' + saleFormHtml() + '</div>' +
-    '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Your recent sales</div>' +
-    '<div class="card table-wrap" id="w-list"><div class="empty">Loading…</div></div>' +
-  '</div>';
-
-  document.getElementById('lo-btn').onclick = logout;
-  wireSaleForm(renderWorker);
-  try{
-    var mine = await api('sales');
-    document.getElementById('w-list').innerHTML = mine.length ? salesTable(mine, false) : '<div class="empty">No sales logged yet.</div>';
-  }catch(e){}
-}
-
-function salesTable(list, showWorker){
-  var rows = list.map(function(s){
-    return '<tr>' + (showWorker ? '<td>' + esc(s.worker_name) + '</td>' : '') + '<td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
-  }).join('');
-  return '<table><thead><tr>' + (showWorker ? '<th>Worker</th>' : '') + '<th>Item</th><th>Cat.</th><th>Qty</th><th>Total</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
-}
-
-function stockTable(list){
-  var rows = list.map(function(s){
-    return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + esc(s.vendor||'—') + '</td><td>' + s.qty + '</td><td>' + esc(s.added_by) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
-  }).join('');
-  return '<table><thead><tr><th>Item</th><th>Cat.</th><th>Vendor</th><th>Qty</th><th>Added by</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
-}
-
 async function renderOwner(){
   app.innerHTML = '<div class="dashboard">' +
-    '<div class="row"><h1>Owner Dashboard</h1><button class="secondary" id="lo-btn">Log out</button></div>' +
+    '<div class="row"><h1>Owner Dashboard</h1><button class="secondary" onclick="logout()">Log out</button></div>' +
     '<div class="tabs">' +
-      '<div class="tab ' + (ownerTab==='sales'?'active':'') + '" data-tab="sales">All Sales</div>' +
-      '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" data-tab="stock">Stock Intake</div>' +
-      '<div class="tab ' + (ownerTab==='workers'?'active':'') + '" data-tab="workers">Workers</div>' +
-      '<div class="tab ' + (ownerTab==='log'?'active':'') + '" data-tab="log">Log a Sale</div>' +
+      '<div class="tab ' + (ownerTab==='reports'?'active':'') + '" onclick="switchTab(\'reports\')">📊 Reports</div>' +
+      '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" onclick="switchTab(\'stock\')">Stock Intake</div>' +
+      '<div class="tab ' + (ownerTab==='workers'?'active':'') + '" onclick="switchTab(\'workers\')">Workers</div>' +
+      '<div class="tab ' + (ownerTab==='log'?'active':'') + '" onclick="switchTab(\'log\')">Log Sale</div>' +
     '</div>' +
-    '<div id="tab-content"><div class="empty">Loading…</div></div>' +
+    '<div id="tab-content"></div>' +
   '</div>';
-
-  document.getElementById('lo-btn').onclick = logout;
-  app.querySelectorAll('.tab').forEach(function(t){
-    t.onclick = function(){ ownerTab = t.dataset.tab; renderOwner(); };
-  });
   await renderOwnerTab();
 }
 
+function switchTab(t){ ownerTab = t; renderOwner(); }
+
 async function renderOwnerTab(){
   var el = document.getElementById('tab-content');
-  if(ownerTab === 'sales'){
-    try{
-      var list = await api('sales');
-      var total = list.reduce(function(s,x){ return s + (x.total||0); }, 0);
-      el.innerHTML = '<div class="card table-wrap">' + (list.length ? salesTable(list, true) : '<div class="empty">No sales logged yet.</div>') +
-        (list.length ? '<div class="total-line"><span>Total revenue</span><span>' + money(total) + '</span></div>' : '') + '</div>';
-    }catch(err){ el.innerHTML = '<div class="err">' + err.message + '</div>'; }
+  if(ownerTab === 'reports'){
+    el.innerHTML = '<div class="card">' +
+      '<div class="field"><label>Report Type</label><select id="rpt-type" onchange="runReport()"><option value="sales">Sales Revenue Report</option><option value="stock">Stock Intake Report</option></select></div>' +
+      '<label>Date Range Quick Filters</label>' +
+      '<div class="btn-group">' +
+        '<button class="btn-sm" onclick="setPreset(\'today\')">Today</button>' +
+        '<button class="btn-sm" onclick="setPreset(\'week\')">This Week</button>' +
+        '<button class="btn-sm" onclick="setPreset(\'month\')">This Month</button>' +
+        '<button class="btn-sm" onclick="setPreset(\'year\')">This Year</button>' +
+        '<button class="btn-sm" onclick="setPreset(\'all\')">All Time</button>' +
+      '</div>' +
+      '<div class="filter-grid">' +
+        '<div class="field"><label>From Date</label><input type="date" id="rpt-from" onchange="runReport()"></div>' +
+        '<div class="field"><label>To Date</label><input type="date" id="rpt-to" onchange="runReport()"></div>' +
+      '</div>' +
+      '<div class="filter-grid">' +
+        '<div class="field"><label>Category</label><select id="rpt-cat" onchange="runReport()">' + catOpts() + '</select></div>' +
+        '<div class="field" id="extra-filter-box"><label>Vendor Filter</label><input id="rpt-vendor" placeholder="Vendor name..." oninput="runReport()"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card table-wrap" id="rpt-results"><div class="empty">Loading report...</div></div>';
+
+    setPreset('month');
   } else if(ownerTab === 'stock'){
     el.innerHTML = '<div class="card">' +
-        '<div class="field"><label>Category</label><select id="st-cat">' + catOpts() + '</select></div>' +
-        '<div class="field"><label>Item</label><input id="st-item" placeholder="e.g. Leather strap watches"></div>' +
-        '<div class="field"><label>Vendor</label><input id="st-vendor" placeholder="e.g. Lagos Imports Ltd"></div>' +
-        '<div class="field"><label>Quantity received</label><input id="st-qty" type="number" min="1" value="1"></div>' +
-        '<div class="field"><label>Cost price (per item, optional)</label><input id="st-cost" type="number" min="0" step="0.01"></div>' +
-        '<div id="st-err" class="err"></div>' +
-        '<button type="button" class="submit" id="st-btn">Add stock</button>' +
-      '</div>' +
-      '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Recent stock intake</div>' +
-      '<div class="card table-wrap" id="st-list"><div class="empty">Loading…</div></div>';
-
+      '<h3>Add Stock Intake</h3>' +
+      '<div class="field"><label>Category</label><select id="st-cat">' + catOpts() + '</select></div>' +
+      '<div class="field"><label>Item Name</label><input id="st-item" placeholder="Item name"></div>' +
+      '<div class="field"><label>Vendor</label><input id="st-vendor" placeholder="Supplier name"></div>' +
+      '<div class="field"><label>Quantity</label><input id="st-qty" type="number" value="1"></div>' +
+      '<button type="button" class="submit" id="st-btn">Save Stock Intake</button>' +
+    '</div>';
     document.getElementById('st-btn').onclick = async function(){
-      var category = document.getElementById('st-cat').value;
-      var item = document.getElementById('st-item').value.trim();
-      var vendor = document.getElementById('st-vendor').value.trim();
-      var qty = parseInt(document.getElementById('st-qty').value, 10);
-      var cost_price = parseFloat(document.getElementById('st-cost').value);
-      var errEl = document.getElementById('st-err');
-      if(!item || !qty || qty <= 0){ errEl.textContent = 'Fill in item and a valid quantity.'; return; }
-      try{
-        await api('stock', { method:'POST', body: JSON.stringify({category: category, item: item, vendor: vendor, qty: qty, cost_price: isNaN(cost_price)?null:cost_price}) });
-        renderOwnerTab();
-      }catch(err){ errEl.textContent = err.message; }
+      await api('stock', { method:'POST', body: JSON.stringify({
+        category: document.getElementById('st-cat').value,
+        item: document.getElementById('st-item').value,
+        vendor: document.getElementById('st-vendor').value,
+        qty: parseInt(document.getElementById('st-qty').value, 10)
+      })});
+      alert('Stock added successfully!');
     };
-    try{
-      var stockList = await api('stock');
-      document.getElementById('st-list').innerHTML = stockList.length ? stockTable(stockList) : '<div class="empty">No stock added yet.</div>';
-    }catch(e){}
   } else if(ownerTab === 'workers'){
-    el.innerHTML = '<div class="card" id="wk-existing"><div class="empty">Loading…</div></div>' +
-      '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Add a worker</div>' +
-      '<div class="card">' +
-        '<div class="field"><label>Name</label><input id="nw-name"></div>' +
-        '<div class="field"><label>Username</label><input id="nw-user"></div>' +
-        '<div class="field"><label>Password</label>' + pwdInputHtml('nw-pass') + '</div>' +
-        '<div id="nw-err" class="err"></div>' +
-        '<button type="button" class="submit" id="nw-btn">Add worker</button>' +
-      '</div>' +
-      '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Reset worker password</div>' +
-      '<div class="card">' +
-        '<div class="field"><label>Worker Username</label><input id="rw-user"></div>' +
-        '<div class="field"><label>New Password</label>' + pwdInputHtml('rw-pass', 'Enter new password') + '</div>' +
-        '<div id="rw-err" class="err"></div>' +
-        '<div id="rw-msg" style="color:var(--gold);font-size:.85rem;margin-top:8px;"></div>' +
-        '<button type="button" class="submit" id="rw-btn">Reset password</button>' +
-      '</div>';
-
-    document.getElementById('nw-btn').onclick = async function(){
-      var name = document.getElementById('nw-name').value.trim();
-      var username = document.getElementById('nw-user').value.trim();
-      var password = document.getElementById('nw-pass').value;
-      var errEl = document.getElementById('nw-err');
-      if(!name || !username || !password){ errEl.textContent = 'Fill in all fields.'; return; }
-      try{
-        await api('workers', { method:'POST', body: JSON.stringify({name: name, username: username, password: password}) });
-        renderOwnerTab();
-      }catch(err){ errEl.textContent = err.message; }
-    };
-
-    document.getElementById('rw-btn').onclick = async function(){
-      var username = document.getElementById('rw-user').value.trim();
-      var password = document.getElementById('rw-pass').value;
-      var errEl = document.getElementById('rw-err');
-      var msgEl = document.getElementById('rw-msg');
-      errEl.textContent = ''; msgEl.textContent = '';
-      if(!username || !password){ errEl.textContent = 'Fill in both username and new password.'; return; }
-      try{
-        await api('workers/reset-password', { method:'POST', body: JSON.stringify({username: username, password: password}) });
-        msgEl.textContent = 'Password for "' + username + '" updated successfully.';
-        document.getElementById('rw-user').value = '';
-        document.getElementById('rw-pass').value = '';
-      }catch(err){ errEl.textContent = err.message; }
-    };
-
-    try{
-      var workerList = await api('workers');
-      var staff = workerList.filter(function(w){ return w.role === 'worker'; });
-      document.getElementById('wk-existing').innerHTML = '<div style="color:var(--ink-muted);margin-bottom:8px;font-weight:600;">Existing workers</div>' +
-        (staff.length ? staff.map(function(w){ return '<div class="row" style="padding:6px 0;">' + esc(w.name) + ' (' + esc(w.username) + ')</div>'; }).join('') : '<div class="empty">No workers added yet.</div>');
-    }catch(e){}
-  } else {
-    el.innerHTML = '<div class="card">' + saleFormHtml() + '</div>';
-    wireSaleForm(function(){ ownerTab = 'sales'; renderOwner(); });
+    el.innerHTML = '<div class="card">' +
+      '<h3>Reset Worker Password</h3>' +
+      '<div class="field"><label>Username</label><input id="rw-user"></div>' +
+      '<div class="field"><label>New Password</label>' + pwdInputHtml('rw-pass', 'New Password') + '</div>' +
+      '<button type="button" class="submit" onclick="resetWorkerPwd()">Reset Password</button>' +
+    '</div>';
   }
+}
+
+function setPreset(p){
+  var now = new Date();
+  var from = '', to = '';
+  if(p === 'today'){
+    from = now.toISOString().split('T')[0];
+    to = from;
+  } else if(p === 'week'){
+    var first = now.getDate() - now.getDay();
+    from = new Date(now.setDate(first)).toISOString().split('T')[0];
+    to = new Date().toISOString().split('T')[0];
+  } else if(p === 'month'){
+    from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    to = new Date().toISOString().split('T')[0];
+  } else if(p === 'year'){
+    from = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+    to = new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('rpt-from').value = from;
+  document.getElementById('rpt-to').value = to;
+  runReport();
+}
+
+async function runReport(){
+  var type = document.getElementById('rpt-type').value;
+  var from = document.getElementById('rpt-from').value;
+  var to = document.getElementById('rpt-to').value;
+  var cat = document.getElementById('rpt-cat').value;
+  var vendor = document.getElementById('rpt-vendor') ? document.getElementById('rpt-vendor').value : '';
+
+  var query = '?from=' + from + '&to=' + to + '&category=' + encodeURIComponent(cat);
+  if(type === 'stock') query += '&vendor=' + encodeURIComponent(vendor);
+
+  try{
+    var list = await api(type + query);
+    var target = document.getElementById('rpt-results');
+
+    if(!list.length){
+      target.innerHTML = '<div class="empty">No record found matching this filter.</div>';
+      return;
+    }
+
+    if(type === 'sales'){
+      var totalRev = list.reduce(function(s, x){ return s + (x.total || 0); }, 0);
+      var totalQty = list.reduce(function(s, x){ return s + (x.qty || 0); }, 0);
+      var rows = list.map(function(s){
+        return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+      }).join('');
+      target.innerHTML = '<table><thead><tr><th>Item</th><th>Cat</th><th>Qty</th><th>Total</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="total-card"><span>Total Units: ' + totalQty + '</span><span>Total Sales: ' + money(totalRev) + '</span></div>';
+    } else {
+      var totalStockQty = list.reduce(function(s, x){ return s + (x.qty || 0); }, 0);
+      var rowsStock = list.map(function(s){
+        return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + esc(s.vendor || '—') + '</td><td>' + s.qty + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+      }).join('');
+      target.innerHTML = '<table><thead><tr><th>Item</th><th>Cat</th><th>Vendor</th><th>Qty</th><th>Date</th></tr></thead><tbody>' + rowsStock + '</tbody></table>' +
+        '<div class="total-card"><span>Total Stock Entries: ' + list.length + '</span><span>Total Items Received: ' + totalStockQty + '</span></div>';
+    }
+  }catch(e){
+    document.getElementById('rpt-results').innerHTML = '<div class="err">' + e.message + '</div>';
+  }
+}
+
+async function resetWorkerPwd(){
+  var user = document.getElementById('rw-user').value;
+  var pass = document.getElementById('rw-pass').value;
+  if(!user || !pass) return alert('Enter username and password.');
+  await api('workers/reset-password', { method:'POST', body: JSON.stringify({username: user, password: pass}) });
+  alert('Password reset successful!');
 }
 
 boot();
