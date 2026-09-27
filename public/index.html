@@ -16,12 +16,7 @@
             --border-color: #1f2937;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
         body {
             background-color: var(--bg-color);
@@ -127,33 +122,20 @@
             font-size: 0.85rem;
             margin-bottom: 1rem;
         }
-
-        /* Responsive tweaks */
-        @media (max-width: 480px) {
-            .header-logo h1 {
-                font-size: 2rem;
-            }
-            .gateway-card {
-                padding: 1.75rem 1.25rem;
-            }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Header / Branding -->
     <div class="header-logo">
         <h1>WATCHPLUG <span>NG</span></h1>
         <p>Your Trusted Source for Authentic Wristwatches</p>
     </div>
 
-    <!-- Gateway Role Selection Box -->
     <div class="gateway-card">
         <h2>Welcome!</h2>
         <p>Please select an option below to continue</p>
 
         <div class="btn-group">
-            <!-- Customer Portal Button -->
             <a href="/shop.html" class="btn btn-primary">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
@@ -161,8 +143,8 @@
                 I am a Customer
             </a>
 
-            <!-- Staff Portal Button -->
-            <a href="/login.html" class="btn btn-secondary">
+            <!-- Direct link to admin.html -->
+            <a href="/admin.html" class="btn btn-secondary">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
@@ -171,7 +153,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <div class="footer">
         &copy; WatchPlug NG. All rights reserved.
     </div>
