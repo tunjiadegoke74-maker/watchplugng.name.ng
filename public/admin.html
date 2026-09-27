@@ -120,10 +120,33 @@
   button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px; }
   button.secondary:hover { background: var(--input-bg); }
 
-  .nav-tabs-wrapper { width: 100%; overflow-x: auto; padding-bottom: 4px; margin: 16px 0 8px; -webkit-overflow-scrolling: touch; }
-  .tabs { display: flex; gap: 8px; width: max-content; }
-  .tab { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--line); font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; background: var(--card); color: var(--ink-muted); }
-  .tab.active { background: var(--gold); color: #ffffff; border-color: var(--gold); }
+  /* Vertical Dropdown Navigation */
+  .vertical-menu-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin: 16px 0 8px 0;
+    width: 100%;
+  }
+
+  .vertical-menu-card label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .vertical-menu-select {
+    background: var(--input-bg);
+    border: 1px solid var(--gold);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 15px;
+  }
 
   .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
   .badge.success { background: var(--success-bg); color: var(--success); }
@@ -331,17 +354,20 @@ function salesCardList(list){
 async function renderOwner(){
   app.innerHTML = '<div class="dashboard">' +
     '<div class="row"><h1>WatchPlugNG</h1><button class="secondary" onclick="logout()">Log out</button></div>' +
-    '<div class="nav-tabs-wrapper">' +
-      '<div class="tabs">' +
-        '<div class="tab ' + (ownerTab==='dash'?'active':'') + '" onclick="switchTab(\'dash\')">Dashboard</div>' +
-        '<div class="tab ' + (ownerTab==='reports'?'active':'') + '" onclick="switchTab(\'reports\')">📊 Custom Reports</div>' +
-        '<div class="tab ' + (ownerTab==='inventory'?'active':'') + '" onclick="switchTab(\'inventory\')">Inventory</div>' +
-        '<div class="tab ' + (ownerTab==='history'?'active':'') + '" onclick="switchTab(\'history\')">Sales History</div>' +
-        '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" onclick="switchTab(\'stock\')">+ Stock</div>' +
-        '<div class="tab ' + (ownerTab==='workers'?'active':'') + '" onclick="switchTab(\'workers\')">Workers</div>' +
-        '<div class="tab ' + (ownerTab==='log'?'active':'') + '" onclick="switchTab(\'log\')">+ Sale</div>' +
-      '</div>' +
+    
+    '<div class="vertical-menu-card">' +
+      '<label>Navigation Menu</label>' +
+      '<select class="vertical-menu-select" id="owner-menu-dropdown" onchange="switchTab(this.value)">' +
+        '<option value="dash" ' + (ownerTab==='dash'?'selected':'') + '>📌 Dashboard Summary</option>' +
+        '<option value="reports" ' + (ownerTab==='reports'?'selected':'') + '>📊 Custom Reports & Excel</option>' +
+        '<option value="inventory" ' + (ownerTab==='inventory'?'selected':'') + '>📦 Inventory Balances</option>' +
+        '<option value="history" ' + (ownerTab==='history'?'selected':'') + '>📜 Sales History</option>' +
+        '<option value="stock" ' + (ownerTab==='stock'?'selected':'') + '>➕ Add Stock Intake</option>' +
+        '<option value="workers" ' + (ownerTab==='workers'?'selected':'') + '>👥 Manage Workers</option>' +
+        '<option value="log" ' + (ownerTab==='log'?'selected':'') + '>📝 Record New Sale</option>' +
+      '</select>' +
     '</div>' +
+
     '<div id="tab-content"></div>' +
   '</div>';
   await renderOwnerTab();
