@@ -1,8 +1,12 @@
-name = "sales-tracker"
+name = "watchplugng-name-ng"
 compatibility_date = "2024-09-23"
-pages_build_output_dir = "public"
+main = "src/worker.js"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "sales-tracker-db"
-database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+database_id = "72438b5f-e7c3-4ec7-a096-8078e2e6ccf1"
