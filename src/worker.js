@@ -69,6 +69,48 @@ async function handleApi(request, env){
 
     if(path === 'me' && method === 'GET') return json(user);
 
+    // Dashboard Overview Metrics Endpoint
+    if(path === 'dashboard-summary' && method === 'GET'){
+      const todayISO = new Date().toISOString().split('T')[0];
+      
+      const todaySales = await env.DB.prepare(
+        'SELECT SUM(total) as total_sales, SUM(qty) as items_sold FROM sales WHERE timestamp >= ?'
+      ).bind(todayISO + 'T00:00:00.000Z').first();
+
+      const topSeller = await env.DB.prepare(
+        'SELECT item, SUM(qty) as qty_sold FROM sales GROUP BY item ORDER BY qty_sold DESC LIMIT 1'
+      ).first();
+
+      const { results: recentSales } = await env.DB.prepare(
+        'SELECT * FROM sales ORDER BY timestamp DESC LIMIT 5'
+      ).all();
+
+      return json({
+        today_sales: todaySales.total_sales || 0,
+        items_sold: todaySales.items_sold || 0,
+        top_seller: topSeller ? topSeller.item : 'None',
+        recent_sales: recentSales || []
+      });
+    }
+
+    // Inventory Stock Balances Endpoint
+    if(path === 'inventory-balances' && method === 'GET'){
+      const query = `
+        SELECT 
+          st.item, 
+          st.category,
+          IFNULL(SUM(st.qty), 0) - IFNULL(s.sold_qty, 0) as remaining_qty
+        FROM stock st
+        LEFT JOIN (
+          SELECT item, SUM(qty) as sold_qty FROM sales GROUP BY item
+        ) s ON st.item = s.item
+        GROUP BY st.item, st.category
+        ORDER BY remaining_qty ASC
+      `;
+      const { results } = await env.DB.prepare(query).all();
+      return json(results || []);
+    }
+
     if(path === 'workers' && method === 'GET'){
       if(user.role !== 'owner') return err('Owners only.', 403);
       const query = `
@@ -140,20 +182,20 @@ async function handleApi(request, env){
         query += ' AND category = ?';
         params.push(category);
       }
-      if(payMethod){
-        try {
-          query += ' AND payment_method = ?';
-          params.push(payMethod);
-        } catch(e){}
-      }
 
       query += ' ORDER BY timestamp DESC';
       
       let stmt = env.DB.prepare(query);
       if(params.length > 0) stmt = stmt.bind(...params);
       
-      const { results } = await stmt.all();
-      return json(results || []);
+      let { results } = await stmt.all();
+      results = results || [];
+
+      if(payMethod){
+        results = results.filter(r => (r.payment_method || 'Bank Transfer') === payMethod);
+      }
+
+      return json(results);
     }
 
     if(path === 'sales' && method === 'POST'){
@@ -170,7 +212,6 @@ async function handleApi(request, env){
         await env.DB.prepare('INSERT INTO sales (id, worker_username, worker_name, category, item, price, qty, total, payment_method, customer_name, customer_phone, timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
           .bind(id, user.username, user.name, category, item, price, q, price*q, pm, cName, cPhone, new Date().toISOString()).run();
       } catch(dbErr) {
-        // Fallback for database schemas that haven't added the new columns yet
         await env.DB.prepare('INSERT INTO sales (id, worker_username, worker_name, category, item, price, qty, total, timestamp) VALUES (?,?,?,?,?,?,?,?,?)')
           .bind(id, user.username, user.name, category, item, price, q, price*q, new Date().toISOString()).run();
       }
