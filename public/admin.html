@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- SheetJS Library for Excel Export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <style>
   :root {
     --ink: #f9fafb;
@@ -72,7 +75,6 @@
     gap: 12px;
   }
 
-  /* List Item Card Formatting */
   .list-container { display: flex; flex-direction: column; gap: 10px; width: 100%; }
   .list-card {
     background: var(--card);
@@ -109,10 +111,15 @@
   }
   button.submit:hover { background: var(--gold-hover); }
 
+  button.excel-btn {
+    height: 44px; border-radius: 10px; border: none; background: #10b981; color: #ffffff;
+    font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  button.excel-btn:hover { background: #059669; }
+
   button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px; }
   button.secondary:hover { background: var(--input-bg); }
 
-  /* Tab Navigation Styling */
   .nav-tabs-wrapper { width: 100%; overflow-x: auto; padding-bottom: 4px; margin: 16px 0 8px; -webkit-overflow-scrolling: touch; }
   .tabs { display: flex; gap: 8px; width: max-content; }
   .tab { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--line); font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; background: var(--card); color: var(--ink-muted); }
@@ -325,6 +332,7 @@ async function renderOwner(){
     '<div class="nav-tabs-wrapper">' +
       '<div class="tabs">' +
         '<div class="tab ' + (ownerTab==='dash'?'active':'') + '" onclick="switchTab(\'dash\')">Dashboard</div>' +
+        '<div class="tab ' + (ownerTab==='reports'?'active':'') + '" onclick="switchTab(\'reports\')">📊 Reports & Excel</div>' +
         '<div class="tab ' + (ownerTab==='inventory'?'active':'') + '" onclick="switchTab(\'inventory\')">Inventory</div>' +
         '<div class="tab ' + (ownerTab==='history'?'active':'') + '" onclick="switchTab(\'history\')">Sales History</div>' +
         '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" onclick="switchTab(\'stock\')">+ Stock</div>' +
@@ -359,6 +367,18 @@ async function renderOwnerTab(){
         '<div class="subtitle" style="text-align:left; margin: 16px 0 8px;">Recent Sales</div>' +
         (d.recent_sales.length ? salesCardList(d.recent_sales) : '<div class="empty">No recent sales</div>');
     } catch(e){ el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+
+  } else if(ownerTab === 'reports'){
+    el.innerHTML = '<div class="card">' +
+      '<h3 style="margin:0 0 4px 0;">Export Sales Report</h3>' +
+      '<p class="subtitle" style="text-align:left; margin:0 0 10px 0;">Download sales records as Excel sheet</p>' +
+      '<button type="button" class="excel-btn" onclick="exportSalesExcel()">📥 Download Sales (.xlsx)</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3 style="margin:0 0 4px 0;">Export Stock Intake Report</h3>' +
+      '<p class="subtitle" style="text-align:left; margin:0 0 10px 0;">Download vendor stock intake records</p>' +
+      '<button type="button" class="excel-btn" onclick="exportStockExcel()">📥 Download Stock Intake (.xlsx)</button>' +
+    '</div>';
 
   } else if(ownerTab === 'inventory'){
     el.innerHTML = '<div class="empty">Loading inventory balances…</div>';
@@ -431,6 +451,56 @@ async function renderOwnerTab(){
     el.innerHTML = '<div class="card">' + saleFormHtml() + '</div>';
     wireSaleForm(function(){ ownerTab = 'history'; renderOwner(); });
   }
+}
+
+async function exportSalesExcel(){
+  try {
+    var data = await api('sales');
+    if(!data.length){ alert('No sales records to export.'); return; }
+    
+    var formatted = data.map(function(s){
+      return {
+        'Date': new Date(s.timestamp).toLocaleDateString(),
+        'Category': s.category || '',
+        'Item Name': s.item || '',
+        'Price (NGN)': s.price || 0,
+        'Quantity': s.qty || 1,
+        'Total (NGN)': s.total || 0,
+        'Payment Method': s.payment_method || '',
+        'Logged By': s.worker_name || s.worker_username || '',
+        'Customer Name': s.customer_name || '',
+        'Customer Phone': s.customer_phone || ''
+      };
+    });
+
+    var ws = XLSX.utils.json_to_sheet(formatted);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
+    XLSX.writeFile(wb, "WatchPlugNG_Sales_Report.xlsx");
+  } catch(e){ alert('Export failed: ' + e.message); }
+}
+
+async function exportStockExcel(){
+  try {
+    var data = await api('stock');
+    if(!data.length){ alert('No stock intake records to export.'); return; }
+    
+    var formatted = data.map(function(st){
+      return {
+        'Date': new Date(st.timestamp).toLocaleDateString(),
+        'Category': st.category || '',
+        'Item Name': st.item || '',
+        'Vendor': st.vendor || '',
+        'Quantity Added': st.qty || 0,
+        'Recorded By': st.worker_name || st.worker_username || ''
+      };
+    });
+
+    var ws = XLSX.utils.json_to_sheet(formatted);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stock Intake Report");
+    XLSX.writeFile(wb, "WatchPlugNG_Stock_Intake_Report.xlsx");
+  } catch(e){ alert('Export failed: ' + e.message); }
 }
 
 async function loadWorkersRoster(){
