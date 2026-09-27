@@ -409,13 +409,6 @@ function salesTable(list, showWorker){
   return '<table><thead><tr>' + (showWorker ? '<th>Worker</th>' : '') + '<th>Item</th><th>Cat</th><th>Qty</th><th>Total</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
-function stockTable(list){
-  var rows = list.map(function(s){
-    return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + esc(s.vendor||'—') + '</td><td>' + s.qty + '</td><td>' + esc(s.added_by) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
-  }).join('');
-  return '<table><thead><tr><th>Item</th><th>Cat</th><th>Vendor</th><th>Qty</th><th>Added by</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
-}
-
 async function renderOwner(){
   app.innerHTML = '<div class="dashboard">' +
     '<div class="row"><h1>Owner Dashboard</h1><button class="secondary" onclick="logout()">Log out</button></div>' +
@@ -477,9 +470,18 @@ async function renderOwnerTab(){
     };
   } else if(ownerTab === 'workers'){
     el.innerHTML = '<div class="card">' +
+      '<h3>Add New Worker</h3>' +
+      '<div class="field"><label>Full Name</label><input id="nw-name" placeholder="Worker\'s full name"></div>' +
+      '<div class="field"><label>Username</label><input id="nw-user" placeholder="Login username"></div>' +
+      '<div class="field"><label>Password</label>' + pwdInputHtml('nw-pass', 'Set password') + '</div>' +
+      '<div id="nw-err" class="err"></div>' +
+      '<button type="button" class="submit" onclick="addWorker()">Create Worker Account</button>' +
+    '</div>' +
+    '<div class="card">' +
       '<h3>Reset Worker Password</h3>' +
-      '<div class="field"><label>Username</label><input id="rw-user"></div>' +
+      '<div class="field"><label>Username</label><input id="rw-user" placeholder="Worker username"></div>' +
       '<div class="field"><label>New Password</label>' + pwdInputHtml('rw-pass', 'New Password') + '</div>' +
+      '<div id="rw-err" class="err"></div>' +
       '<button type="button" class="submit" onclick="resetWorkerPwd()">Reset Password</button>' +
     '</div>';
   } else if(ownerTab === 'log'){
@@ -561,12 +563,34 @@ async function runReport(){
   }
 }
 
+async function addWorker(){
+  var name = document.getElementById('nw-name').value.trim();
+  var username = document.getElementById('nw-user').value.trim();
+  var password = document.getElementById('nw-pass').value;
+  var errEl = document.getElementById('nw-err');
+  errEl.textContent = '';
+  if(!name || !username || !password){ errEl.textContent = 'Please fill out all fields.'; return; }
+  try{
+    await api('workers', { method:'POST', body: JSON.stringify({name: name, username: username, password: password}) });
+    alert('Worker account created successfully!');
+    document.getElementById('nw-name').value = '';
+    document.getElementById('nw-user').value = '';
+    document.getElementById('nw-pass').value = '';
+  }catch(e){ errEl.textContent = e.message; }
+}
+
 async function resetWorkerPwd(){
-  var user = document.getElementById('rw-user').value;
+  var user = document.getElementById('rw-user').value.trim();
   var pass = document.getElementById('rw-pass').value;
-  if(!user || !pass) return alert('Enter username and password.');
-  await api('workers/reset-password', { method:'POST', body: JSON.stringify({username: user, password: pass}) });
-  alert('Password reset successful!');
+  var errEl = document.getElementById('rw-err');
+  errEl.textContent = '';
+  if(!user || !pass){ errEl.textContent = 'Enter username and password.'; return; }
+  try{
+    await api('workers/reset-password', { method:'POST', body: JSON.stringify({username: user, password: pass}) });
+    alert('Password reset successful!');
+    document.getElementById('rw-user').value = '';
+    document.getElementById('rw-pass').value = '';
+  }catch(e){ errEl.textContent = e.message; }
 }
 
 boot();
