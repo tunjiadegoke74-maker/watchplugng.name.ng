@@ -69,7 +69,7 @@ async function handleApi(request, env){
 
     if(path === 'me' && method === 'GET') return json(user);
 
-    // Dashboard Overview Metrics Endpoint
+    // Dashboard Metrics
     if(path === 'dashboard-summary' && method === 'GET'){
       const todayISO = new Date().toISOString().split('T')[0];
       
@@ -82,7 +82,7 @@ async function handleApi(request, env){
       ).first();
 
       const { results: recentSales } = await env.DB.prepare(
-        'SELECT * FROM sales ORDER BY timestamp DESC LIMIT 5'
+        'SELECT * FROM sales ORDER BY timestamp DESC LIMIT 6'
       ).all();
 
       return json({
@@ -93,7 +93,7 @@ async function handleApi(request, env){
       });
     }
 
-    // Inventory Stock Balances Endpoint
+    // Live Inventory Balances
     if(path === 'inventory-balances' && method === 'GET'){
       const query = `
         SELECT 
@@ -111,6 +111,7 @@ async function handleApi(request, env){
       return json(results || []);
     }
 
+    // Workers List with Stats
     if(path === 'workers' && method === 'GET'){
       if(user.role !== 'owner') return err('Owners only.', 403);
       const query = `
@@ -129,6 +130,7 @@ async function handleApi(request, env){
       return json(results || []);
     }
 
+    // Reset Worker Password Route
     if(path === 'workers/reset-password' && method === 'POST'){
       if(user.role !== 'owner') return err('Owners only.', 403);
       const { username, password } = await request.json();
@@ -141,6 +143,7 @@ async function handleApi(request, env){
       return json({ ok: true });
     }
 
+    // Create New Worker
     if(path === 'workers' && method === 'POST'){
       if(user.role !== 'owner') return err('Owners only.', 403);
       const { name, username, password } = await request.json();
@@ -155,7 +158,7 @@ async function handleApi(request, env){
       return json({ ok: true });
     }
 
-    // Filtered Sales Route
+    // Filtered Sales
     if(path === 'sales' && method === 'GET'){
       const from = url.searchParams.get('from');
       const to = url.searchParams.get('to');
@@ -218,7 +221,7 @@ async function handleApi(request, env){
       return json({ ok: true, id });
     }
 
-    // Filtered Stock Intake Route
+    // Filtered Stock Intake
     if(path === 'stock' && method === 'GET'){
       const from = url.searchParams.get('from');
       const to = url.searchParams.get('to');
