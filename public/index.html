@@ -42,56 +42,6 @@
     padding: 32px 20px;
   }
 
-  .dial {
-    position: relative;
-    width: 100px;
-    height: 100px;
-    margin-bottom: 20px;
-    flex-shrink: 0;
-  }
-  .dial-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 1px solid rgba(139, 111, 47, 0.35);
-  }
-  .tick {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 2px;
-    border-radius: 1px;
-    transform-origin: 50% 50%;
-  }
-  .tick.major { height: 15px; background: var(--gold); }
-  .tick.minor { height: 8px; width: 1.5px; background: #C9BFA0; }
-  .hand {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 2px;
-    height: 33px;
-    background: var(--gold);
-    border-radius: 1px;
-    transform-origin: 50% 100%;
-    transform: translate(-50%, -100%) rotate(0deg);
-    animation: sweep 9s linear infinite;
-  }
-  .pivot {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 6px;
-    height: 6px;
-    background: var(--gold);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-  }
-  @keyframes sweep {
-    from { transform: translate(-50%, -100%) rotate(0deg); }
-    to   { transform: translate(-50%, -100%) rotate(360deg); }
-  }
-
   .screen {
     width: 100%;
     max-width: 360px;
@@ -223,7 +173,10 @@ let ownerTab = 'reports';
 
 const money = function(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); };
 const esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
-const catOpts = function(){ return '<option value="">All Categories</option>' + CATEGORIES.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join(''); };
+const catOpts = function(includeAll){ 
+  var opts = CATEGORIES.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join('');
+  return includeAll ? '<option value="">All Categories</option>' + opts : opts;
+};
 
 function pwdInputHtml(id, placeholder){
   var ph = placeholder || 'Password';
@@ -300,6 +253,30 @@ async function logout(){
   renderLogin();
 }
 
+function saleFormHtml(){
+  return '<div class="field"><label>Category</label><select id="w-cat">' + catOpts(false) + '</select></div>' +
+    '<div class="field"><label>Item Name</label><input id="w-item" placeholder="e.g. Silver cufflink set"></div>' +
+    '<div class="field"><label>Price (per item)</label><input id="w-price" type="number" min="0" step="0.01"></div>' +
+    '<div class="field"><label>Quantity</label><input id="w-qty" type="number" min="1" value="1"></div>' +
+    '<div id="w-err" class="err"></div>' +
+    '<button type="button" class="submit" id="w-btn">Log Sale</button>';
+}
+
+function wireSaleForm(onDone){
+  document.getElementById('w-btn').onclick = async function(){
+    var category = document.getElementById('w-cat').value;
+    var item = document.getElementById('w-item').value.trim();
+    var price = parseFloat(document.getElementById('w-price').value);
+    var qty = parseInt(document.getElementById('w-qty').value, 10) || 1;
+    var errEl = document.getElementById('w-err');
+    if(!item || isNaN(price) || price < 0){ errEl.textContent = 'Fill in item and a valid price.'; return; }
+    try{
+      await api('sales', { method:'POST', body: JSON.stringify({category: category, item: item, price: price, qty: qty}) });
+      onDone();
+    }catch(err){ errEl.textContent = err.message; }
+  };
+}
+
 async function renderOwner(){
   app.innerHTML = '<div class="dashboard">' +
     '<div class="row"><h1>Owner Dashboard</h1><button class="secondary" onclick="logout()">Log out</button></div>' +
@@ -320,7 +297,7 @@ async function renderOwnerTab(){
   var el = document.getElementById('tab-content');
   if(ownerTab === 'reports'){
     el.innerHTML = '<div class="card">' +
-      '<div class="field"><label>Report Type</label><select id="rpt-type" onchange="runReport()"><option value="sales">Sales Revenue Report</option><option value="stock">Stock Intake Report</option></select></div>' +
+      '<div class="field"><label>Report Type</label><select id="rpt-type" onchange="toggleReportFields(); runReport();"><option value="sales">Sales Revenue Report</option><option value="stock">Stock Intake Report</option></select></div>' +
       '<label>Date Range Quick Filters</label>' +
       '<div class="btn-group">' +
         '<button class="btn-sm" onclick="setPreset(\'today\')">Today</button>' +
@@ -334,8 +311,8 @@ async function renderOwnerTab(){
         '<div class="field"><label>To Date</label><input type="date" id="rpt-to" onchange="runReport()"></div>' +
       '</div>' +
       '<div class="filter-grid">' +
-        '<div class="field"><label>Category</label><select id="rpt-cat" onchange="runReport()">' + catOpts() + '</select></div>' +
-        '<div class="field" id="extra-filter-box"><label>Vendor Filter</label><input id="rpt-vendor" placeholder="Vendor name..." oninput="runReport()"></div>' +
+        '<div class="field"><label>Category</label><select id="rpt-cat" onchange="runReport()">' + catOpts(true) + '</select></div>' +
+        '<div class="field" id="vendor-filter-box" style="display:none;"><label>Vendor Filter</label><input id="rpt-vendor" placeholder="Vendor name..." oninput="runReport()"></div>' +
       '</div>' +
     '</div>' +
     '<div class="card table-wrap" id="rpt-results"><div class="empty">Loading report...</div></div>';
@@ -344,7 +321,7 @@ async function renderOwnerTab(){
   } else if(ownerTab === 'stock'){
     el.innerHTML = '<div class="card">' +
       '<h3>Add Stock Intake</h3>' +
-      '<div class="field"><label>Category</label><select id="st-cat">' + catOpts() + '</select></div>' +
+      '<div class="field"><label>Category</label><select id="st-cat">' + catOpts(false) + '</select></div>' +
       '<div class="field"><label>Item Name</label><input id="st-item" placeholder="Item name"></div>' +
       '<div class="field"><label>Vendor</label><input id="st-vendor" placeholder="Supplier name"></div>' +
       '<div class="field"><label>Quantity</label><input id="st-qty" type="number" value="1"></div>' +
@@ -366,6 +343,17 @@ async function renderOwnerTab(){
       '<div class="field"><label>New Password</label>' + pwdInputHtml('rw-pass', 'New Password') + '</div>' +
       '<button type="button" class="submit" onclick="resetWorkerPwd()">Reset Password</button>' +
     '</div>';
+  } else if(ownerTab === 'log'){
+    el.innerHTML = '<div class="card">' + saleFormHtml() + '</div>';
+    wireSaleForm(function(){ ownerTab = 'reports'; renderOwner(); });
+  }
+}
+
+function toggleReportFields(){
+  var type = document.getElementById('rpt-type').value;
+  var vendorBox = document.getElementById('vendor-filter-box');
+  if(vendorBox){
+    vendorBox.style.display = (type === 'stock') ? 'block' : 'none';
   }
 }
 
@@ -396,7 +384,10 @@ async function runReport(){
   var from = document.getElementById('rpt-from').value;
   var to = document.getElementById('rpt-to').value;
   var cat = document.getElementById('rpt-cat').value;
-  var vendor = document.getElementById('rpt-vendor') ? document.getElementById('rpt-vendor').value : '';
+  var vendorInput = document.getElementById('rpt-vendor');
+  var vendor = vendorInput ? vendorInput.value : '';
+
+  toggleReportFields();
 
   var query = '?from=' + from + '&to=' + to + '&category=' + encodeURIComponent(cat);
   if(type === 'stock') query += '&vendor=' + encodeURIComponent(vendor);
