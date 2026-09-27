@@ -19,8 +19,9 @@
     --gold-hover: #6F5824;
     --input-bg: #FBF9F3;
     --focus: rgba(139, 111, 47, 0.35);
-    --danger: #b33;
-    --success: #28a745;
+    --danger: #B33;
+    --success: #137333;
+    --success-bg: #E6F4EA;
   }
 
   * { box-sizing: border-box; }
@@ -39,23 +40,15 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    padding: 24px 16px;
+    padding: 20px 16px;
   }
 
   .dial {
-    position: relative;
-    width: 90px;
-    height: 90px;
-    margin-bottom: 16px;
-    flex-shrink: 0;
+    position: relative; width: 80px; height: 80px; margin-bottom: 12px; flex-shrink: 0;
   }
   .dial-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(139, 111, 47, 0.35); }
-  .tick { position: absolute; left: 50%; top: 50%; width: 2px; border-radius: 1px; transform-origin: 50% 50%; }
-  .tick.major { height: 14px; background: var(--gold); }
-  .tick.minor { height: 7px; width: 1.5px; background: #C9BFA0; }
   .hand {
-    position: absolute; left: 50%; top: 50%; width: 2px; height: 30px;
+    position: absolute; left: 50%; top: 50%; width: 2px; height: 26px;
     background: var(--gold); border-radius: 1px; transform-origin: 50% 100%;
     transform: translate(-50%, -100%) rotate(0deg); animation: sweep 9s linear infinite;
   }
@@ -68,24 +61,34 @@
   .subtitle { margin-top: 4px; font-size: 13px; color: var(--ink-muted); text-align: center; }
 
   .card {
-    margin-top: 16px;
+    margin-top: 14px;
     width: 100%;
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 20px 16px;
+    border-radius: 16px;
+    padding: 18px 16px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
   }
 
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* List Item Card Formatting */
+  .list-container { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .list-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-card { background: var(--input-bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
   .stat-card .label { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; font-weight: 600; }
-  .stat-card .value { font-size: 20px; font-weight: 700; margin-top: 4px; color: var(--ink); }
-
-  .item-list-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .item-list-row:last-child { border-bottom: none; }
+  .stat-card .value { font-size: 18px; font-weight: 700; margin-top: 4px; color: var(--ink); }
 
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field label { font-size: 13px; color: var(--ink-muted); }
@@ -108,29 +111,27 @@
 
   button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px; }
 
-  .tabs { display: flex; gap: 8px; margin: 16px 0; overflow-x: auto; width: 100%; padding-bottom: 4px; }
-  .tab { padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line); font-size: 0.8rem; cursor: pointer; white-space: nowrap; background: var(--card); }
-  .tab.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+  /* Tab Navigation Styling */
+  .nav-tabs-wrapper { width: 100%; overflow-x: auto; padding-bottom: 4px; margin: 16px 0 8px; -webkit-overflow-scrolling: touch; }
+  .tabs { display: flex; gap: 8px; width: max-content; }
+  .tab { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--line); font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; background: var(--card); color: var(--ink-muted); }
+  .tab.active { background: var(--gold); color: #FFFDF8; border-color: var(--gold); }
 
-  .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-  .badge.success { background: #E6F4EA; color: #137333; }
-  .badge.danger { background: #FCE8E6; color: #C5221F; }
+  .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+  .badge.success { background: var(--success-bg); color: var(--success); }
+  .badge.danger { background: #FCE8E6; color: var(--danger); }
+  .badge.neutral { background: #E7DFCB; color: #241F16; }
 
-  .dashboard { width: 100%; max-width: 500px; }
+  .dashboard { width: 100%; max-width: 480px; }
   .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th, td { text-align: left; padding: 10px 4px; border-bottom: 1px solid var(--line); }
-  th { color: var(--ink-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
   .err { color: var(--danger); font-size: 0.85rem; margin-top: 4px; }
   .empty { color: var(--ink-muted); font-size: 0.85rem; text-align: center; padding: 20px 0; }
-  .wa-btn { background: #25D366; color: white; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; }
-  .footnote { margin-top: 24px; font-size: 11px; color: #B3AB94; text-align: center; }
+  .wa-btn { background: #25D366; color: white; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-top: 4px; }
 </style>
 </head>
 <body>
 
-<div id="app"><div class="empty">Loading…</div></div>
+<div id="app"><div class="empty">Loading WatchPlugNG…</div></div>
 
 <script>
 const CATEGORIES = ['Wrist Watches','Cufflinks','Jersey Scarves','Sneakers','Jewellery'];
@@ -290,41 +291,43 @@ async function renderWorker(){
     '<div class="row"><h1>Hi, ' + esc(user.name) + '</h1><button class="secondary" onclick="logout()">Log out</button></div>' +
     '<div class="card">' + saleFormHtml() + '</div>' +
     '<div class="subtitle" style="text-align:left; margin: 20px 0 10px;">Your recent sales</div>' +
-    '<div class="card table-wrap" id="w-list"><div class="empty">Loading…</div></div>' +
+    '<div id="w-list"><div class="empty">Loading…</div></div>' +
   '</div>';
 
   wireSaleForm(renderWorker);
   try{
     var mine = await api('sales');
-    document.getElementById('w-list').innerHTML = mine.length ? salesHistoryList(mine) : '<div class="empty">No sales logged yet.</div>';
+    document.getElementById('w-list').innerHTML = mine.length ? salesCardList(mine) : '<div class="empty">No sales logged yet.</div>';
   }catch(e){}
 }
 
-function salesHistoryList(list){
-  return list.map(function(s){
-    return '<div class="item-list-row">' +
+function salesCardList(list){
+  return '<div class="list-container">' + list.map(function(s){
+    return '<div class="list-card">' +
       '<div>' +
-        '<strong>' + esc(s.item) + '</strong><br>' +
-        '<small style="color:var(--ink-muted)">' + new Date(s.timestamp).toLocaleDateString() + ' • ' + esc(s.payment_method||'Transfer') + '</small>' +
+        '<strong style="font-size:15px; color:var(--ink);">' + esc(s.item) + '</strong><br>' +
+        '<small style="color:var(--ink-muted); font-size:12px;">' + new Date(s.timestamp).toLocaleDateString() + ' • ' + esc(s.payment_method||'Transfer') + '</small>' +
       '</div>' +
       '<div style="text-align:right;">' +
-        '<strong>' + money(s.total) + '</strong><br>' +
-        '<small style="color:var(--ink-muted)">Qty: ' + s.qty + '</small>' +
+        '<strong style="font-size:15px; color:var(--gold);">' + money(s.total) + '</strong><br>' +
+        '<small style="color:var(--ink-muted); font-size:12px;">Qty: ' + s.qty + '</small>' +
       '</div>' +
     '</div>';
-  }).join('');
+  }).join('') + '</div>';
 }
 
 async function renderOwner(){
   app.innerHTML = '<div class="dashboard">' +
     '<div class="row"><h1>WatchPlugNG</h1><button class="secondary" onclick="logout()">Log out</button></div>' +
-    '<div class="tabs">' +
-      '<div class="tab ' + (ownerTab==='dash'?'active':'') + '" onclick="switchTab(\'dash\')">Dashboard</div>' +
-      '<div class="tab ' + (ownerTab==='inventory'?'active':'') + '" onclick="switchTab(\'inventory\')">Inventory</div>' +
-      '<div class="tab ' + (ownerTab==='history'?'active':'') + '" onclick="switchTab(\'history\')">Sales History</div>' +
-      '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" onclick="switchTab(\'stock\')">+ Stock</div>' +
-      '<div class="tab ' + (ownerTab==='workers'?'active':'') + '" onclick="switchTab(\'workers\')">Workers</div>' +
-      '<div class="tab ' + (ownerTab==='log'?'active':'') + '" onclick="switchTab(\'log\')">+ Sale</div>' +
+    '<div class="nav-tabs-wrapper">' +
+      '<div class="tabs">' +
+        '<div class="tab ' + (ownerTab==='dash'?'active':'') + '" onclick="switchTab(\'dash\')">Dashboard</div>' +
+        '<div class="tab ' + (ownerTab==='inventory'?'active':'') + '" onclick="switchTab(\'inventory\')">Inventory</div>' +
+        '<div class="tab ' + (ownerTab==='history'?'active':'') + '" onclick="switchTab(\'history\')">Sales History</div>' +
+        '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" onclick="switchTab(\'stock\')">+ Stock</div>' +
+        '<div class="tab ' + (ownerTab==='workers'?'active':'') + '" onclick="switchTab(\'workers\')">Workers</div>' +
+        '<div class="tab ' + (ownerTab==='log'?'active':'') + '" onclick="switchTab(\'log\')">+ Sale</div>' +
+      '</div>' +
     '</div>' +
     '<div id="tab-content"></div>' +
   '</div>';
@@ -336,52 +339,54 @@ function switchTab(t){ ownerTab = t; renderOwner(); }
 async function renderOwnerTab(){
   var el = document.getElementById('tab-content');
   
-  // 1. Dashboard View
   if(ownerTab === 'dash'){
     el.innerHTML = '<div class="empty">Loading dashboard summary…</div>';
     try {
       var d = await api('dashboard-summary');
       var dateStr = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-      el.innerHTML = '<div class="subtitle" style="text-align:left;">Today, ' + dateStr + '</div>' +
-        '<div class="stat-grid" style="margin-top:10px;">' +
+      el.innerHTML = '<div class="subtitle" style="text-align:left; margin-bottom:8px;">Today, ' + dateStr + '</div>' +
+        '<div class="stat-grid">' +
           '<div class="stat-card"><div class="label">Today Sales</div><div class="value">' + money(d.today_sales) + '</div></div>' +
           '<div class="stat-card"><div class="label">Items Sold</div><div class="value">' + d.items_sold + '</div></div>' +
         '</div>' +
         '<div class="card">' +
-          '<div class="label" style="font-size:11px; color:var(--ink-muted); text-transform:uppercase;">Top Seller This Month</div>' +
-          '<strong>' + esc(d.top_seller) + '</strong>' +
+          '<div class="label" style="font-size:11px; color:var(--ink-muted); text-transform:uppercase; font-weight:600;">Top Seller This Month</div>' +
+          '<strong style="font-size:16px;">' + esc(d.top_seller) + '</strong>' +
         '</div>' +
         '<div class="subtitle" style="text-align:left; margin: 16px 0 8px;">Recent Sales</div>' +
-        '<div class="card">' + (d.recent_sales.length ? salesHistoryList(d.recent_sales) : '<div class="empty">No recent sales</div>') + '</div>';
+        (d.recent_sales.length ? salesCardList(d.recent_sales) : '<div class="empty">No recent sales</div>');
     } catch(e){ el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 
-  // 2. Inventory Balances View
   } else if(ownerTab === 'inventory'){
     el.innerHTML = '<div class="empty">Loading inventory balances…</div>';
     try {
       var inv = await api('inventory-balances');
-      var rows = inv.map(function(item){
-        var badge = item.remaining_qty > 2 ? '<span class="badge success">' + item.remaining_qty + ' In Stock</span>' : '<span class="badge danger">' + item.remaining_qty + ' Low Stock</span>';
-        return '<div class="item-list-row">' +
-          '<div><strong>' + esc(item.item) + '</strong><br><small style="color:var(--ink-muted)">' + esc(item.category) + '</small></div>' +
+      if(!inv.length){
+        el.innerHTML = '<div class="empty">No inventory items recorded yet.</div>';
+        return;
+      }
+      var cards = '<div class="list-container">' + inv.map(function(item){
+        var badge = item.remaining_qty > 2 
+          ? '<span class="badge success">' + item.remaining_qty + ' In Stock</span>' 
+          : '<span class="badge danger">' + item.remaining_qty + ' Low Stock</span>';
+        return '<div class="list-card">' +
+          '<div><strong style="font-size:15px;">' + esc(item.item) + '</strong><br><small style="color:var(--ink-muted); font-size:12px;">' + esc(item.category) + '</small></div>' +
           '<div>' + badge + '</div>' +
         '</div>';
-      }).join('');
-      el.innerHTML = '<div class="card">' + (inv.length ? rows : '<div class="empty">No inventory items recorded yet.</div>') + '</div>';
+      }).join('') + '</div>';
+      el.innerHTML = cards;
     } catch(e){ el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 
-  // 3. Sales History View
   } else if(ownerTab === 'history'){
     el.innerHTML = '<div class="empty">Loading sales history…</div>';
     try {
       var history = await api('sales');
-      el.innerHTML = '<div class="card">' + (history.length ? salesHistoryList(history) : '<div class="empty">No sales history available.</div>') + '</div>';
+      el.innerHTML = history.length ? salesCardList(history) : '<div class="empty">No sales history available.</div>';
     } catch(e){ el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 
-  // 4. Stock Intake Tab
   } else if(ownerTab === 'stock'){
     el.innerHTML = '<div class="card">' +
-      '<h3>Add Stock Intake</h3>' +
+      '<h3 style="margin:0 0 6px 0;">Add Stock Intake</h3>' +
       '<div class="field"><label>Category</label><select id="st-cat">' + catOpts(false) + '</select></div>' +
       '<div class="field"><label>Item Name</label><input id="st-item" placeholder="e.g. Casio Edifice EFR-556"></div>' +
       '<div class="field"><label>Vendor</label><input id="st-vendor" placeholder="Supplier name"></div>' +
@@ -398,20 +403,27 @@ async function renderOwnerTab(){
       alert('Stock added successfully!');
     };
 
-  // 5. Workers Roster Tab
   } else if(ownerTab === 'workers'){
     el.innerHTML = '<div class="card">' +
-      '<h3>Add New Worker</h3>' +
-      '<div class="field"><label>Full Name</label><input id="nw-name"></div>' +
-      '<div class="field"><label>Username</label><input id="nw-user"></div>' +
-      '<div class="field"><label>Password</label>' + pwdInputHtml('nw-pass') + '</div>' +
+      '<h3 style="margin:0;">Add New Worker Account</h3>' +
+      '<div class="field"><label>Full Name</label><input id="nw-name" placeholder="e.g. John Doe"></div>' +
+      '<div class="field"><label>Username</label><input id="nw-user" placeholder="e.g. johndoe"></div>' +
+      '<div class="field"><label>Password</label>' + pwdInputHtml('nw-pass', 'Set Password') + '</div>' +
       '<div id="nw-err" class="err"></div>' +
       '<button type="button" class="submit" onclick="addWorker()">Create Account</button>' +
     '</div>' +
-    '<div class="card table-wrap" id="workers-list-card"><h3>Team Activity Roster</h3><div id="workers-table-box">Loading…</div></div>';
+    '<div class="card">' +
+      '<h3 style="margin:0;">Reset Worker Password</h3>' +
+      '<div class="field"><label>Worker Username</label><input id="rw-user" placeholder="Target username"></div>' +
+      '<div class="field"><label>New Password</label>' + pwdInputHtml('rw-pass', 'New Password') + '</div>' +
+      '<div id="rw-err" class="err"></div>' +
+      '<button type="button" class="submit" onclick="resetWorkerPwd()">Reset Password</button>' +
+    '</div>' +
+    '<div class="subtitle" style="text-align:left; margin:16px 0 8px;">Team Activity Roster</div>' +
+    '<div id="workers-roster-box"><div class="empty">Loading team activity…</div></div>';
+    
     loadWorkersRoster();
 
-  // 6. Log Sale Tab
   } else if(ownerTab === 'log'){
     el.innerHTML = '<div class="card">' + saleFormHtml() + '</div>';
     wireSaleForm(function(){ ownerTab = 'history'; renderOwner(); });
@@ -421,23 +433,50 @@ async function renderOwnerTab(){
 async function loadWorkersRoster(){
   try{
     var list = await api('workers');
-    var target = document.getElementById('workers-table-box');
-    var rows = list.map(function(w){
-      return '<tr><td><strong>' + esc(w.name) + '</strong></td><td>' + (w.total_entries || 0) + '</td></tr>';
-    }).join('');
-    target.innerHTML = '<table><thead><tr><th>Name</th><th>Sales Logged</th></tr></thead><tbody>' + rows + '</tbody></table>';
-  }catch(e){}
+    var target = document.getElementById('workers-roster-box');
+    if(!list.length){ target.innerHTML = '<div class="empty">No workers registered.</div>'; return; }
+    
+    var cards = '<div class="list-container">' + list.map(function(w){
+      return '<div class="list-card">' +
+        '<div><strong style="font-size:15px;">' + esc(w.name) + '</strong><br><small style="color:var(--ink-muted); font-size:12px;">@' + esc(w.username) + '</small></div>' +
+        '<div style="text-align:right;"><span class="badge neutral">' + (w.total_entries || 0) + ' Sales Logged</span></div>' +
+      '</div>';
+    }).join('') + '</div>';
+    target.innerHTML = cards;
+  }catch(e){
+    document.getElementById('workers-roster-box').innerHTML = '<div class="err">' + e.message + '</div>';
+  }
 }
 
 async function addWorker(){
   var name = document.getElementById('nw-name').value.trim();
   var username = document.getElementById('nw-user').value.trim();
   var password = document.getElementById('nw-pass').value;
+  var errEl = document.getElementById('nw-err');
+  errEl.textContent = '';
+  if(!name || !username || !password){ errEl.textContent = 'Please fill out all fields.'; return; }
   try{
     await api('workers', { method:'POST', body: JSON.stringify({name: name, username: username, password: password}) });
-    alert('Worker account created!');
+    alert('Worker account created successfully!');
+    document.getElementById('nw-name').value = '';
+    document.getElementById('nw-user').value = '';
+    document.getElementById('nw-pass').value = '';
     loadWorkersRoster();
-  }catch(e){ document.getElementById('nw-err').textContent = e.message; }
+  }catch(e){ errEl.textContent = e.message; }
+}
+
+async function resetWorkerPwd(){
+  var user = document.getElementById('rw-user').value.trim();
+  var pass = document.getElementById('rw-pass').value;
+  var errEl = document.getElementById('rw-err');
+  errEl.textContent = '';
+  if(!user || !pass){ errEl.textContent = 'Enter worker username and new password.'; return; }
+  try{
+    await api('workers/reset-password', { method:'POST', body: JSON.stringify({username: user, password: pass}) });
+    alert('Worker password updated successfully!');
+    document.getElementById('rw-user').value = '';
+    document.getElementById('rw-pass').value = '';
+  }catch(e){ errEl.textContent = e.message; }
 }
 
 boot();
