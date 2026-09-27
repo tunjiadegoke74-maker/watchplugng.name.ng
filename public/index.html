@@ -42,7 +42,6 @@
     padding: 32px 20px;
   }
 
-  /* Watch dial animation mark */
   .dial {
     position: relative;
     width: 100px;
@@ -221,6 +220,7 @@
   .total-card { background: var(--input-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--line); margin-top: 10px; display: flex; justify-content: space-between; font-weight: 700; }
   .err { color: var(--danger); font-size: 0.85rem; margin-top: 4px; }
   .empty { color: var(--ink-muted); font-size: 0.85rem; text-align: center; padding: 20px 0; }
+  .badge { background: #E7DFCB; color: #241F16; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
 </style>
 </head>
 <body>
@@ -483,10 +483,43 @@ async function renderOwnerTab(){
       '<div class="field"><label>New Password</label>' + pwdInputHtml('rw-pass', 'New Password') + '</div>' +
       '<div id="rw-err" class="err"></div>' +
       '<button type="button" class="submit" onclick="resetWorkerPwd()">Reset Password</button>' +
+    '</div>' +
+    '<div class="card table-wrap" id="workers-list-card">' +
+      '<h3>Team Activity Roster</h3>' +
+      '<div id="workers-table-box"><div class="empty">Loading workers list...</div></div>' +
     '</div>';
+
+    loadWorkersRoster();
   } else if(ownerTab === 'log'){
     el.innerHTML = '<div class="card">' + saleFormHtml() + '</div>';
     wireSaleForm(function(){ ownerTab = 'reports'; renderOwner(); });
+  }
+}
+
+async function loadWorkersRoster(){
+  try{
+    var list = await api('workers');
+    var target = document.getElementById('workers-table-box');
+    if(!list.length){
+      target.innerHTML = '<div class="empty">No workers found.</div>';
+      return;
+    }
+    
+    var rows = list.map(function(w){
+      var created = w.created_at ? new Date(w.created_at).toLocaleDateString() : '—';
+      var lastAct = w.last_activity ? new Date(w.last_activity).toLocaleDateString() : 'No entries yet';
+      return '<tr>' +
+        '<td><strong>' + esc(w.name) + '</strong><br><small style="color:var(--ink-muted)">@' + esc(w.username) + '</small></td>' +
+        '<td><span class="badge">' + esc(w.role) + '</span></td>' +
+        '<td>' + (w.total_entries || 0) + '</td>' +
+        '<td>' + lastAct + '</td>' +
+        '<td>' + created + '</td>' +
+      '</tr>';
+    }).join('');
+
+    target.innerHTML = '<table><thead><tr><th>Name / User</th><th>Role</th><th>Entries</th><th>Last Active</th><th>Joined</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }catch(e){
+    document.getElementById('workers-table-box').innerHTML = '<div class="err">' + e.message + '</div>';
   }
 }
 
@@ -576,6 +609,7 @@ async function addWorker(){
     document.getElementById('nw-name').value = '';
     document.getElementById('nw-user').value = '';
     document.getElementById('nw-pass').value = '';
+    loadWorkersRoster();
   }catch(e){ errEl.textContent = e.message; }
 }
 
