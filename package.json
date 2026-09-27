@@ -1,8 +1,7 @@
 {
-      "name": "sales-tracker",
-        "private": true,
-          "scripts": {
-              "build": "echo no-build-needed"
-                }
-                }
+  "name": "sales-tracker",
+  "private": true,
+  "scripts": {
+    "build": "echo no-build-needed"
+  }
 }
