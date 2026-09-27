@@ -74,7 +74,17 @@ function json(data, status=200){
                                                                                                                                                                                                                                             const { results } = await env.DB.prepare('SELECT username, name, role FROM workers ORDER BY name').all();
                                                                                                                                                                                                                                                   return json(results);
                                                                                                                                                                                                                                                       }
-
+if(path === 'workers/reset-password' && method === 'POST'){
+      if(user.role !== 'owner') return err('Owners only.', 403);
+      const { username, password } = await request.json();
+      if(!username || !password) return err('Missing fields.');
+      const target = await env.DB.prepare('SELECT username FROM workers WHERE username = ?').bind(username.toLowerCase()).first();
+      if(!target) return err('Worker not found.', 404);
+      const salt = uid();
+      const hash = await hashPassword(password, salt);
+      await env.DB.prepare('UPDATE workers SET salt = ?, hash = ? WHERE username = ?').bind(salt, hash, username.toLowerCase()).run();
+      return json({ ok: true });
+}
                                                                                                                                                                                                                                                           if(path === 'workers' && method === 'POST'){
                                                                                                                                                                                                                                                                 if(user.role !== 'owner') return err('Owners only.', 403);
                                                                                                                                                                                                                                                                       const { name, username, password } = await request.json();
