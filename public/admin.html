@@ -341,7 +341,7 @@ function salesCardList(list){
     return '<div class="list-card">' +
       '<div>' +
         '<strong style="font-size:15px; color:var(--ink);">' + esc(s.item) + '</strong><br>' +
-        '<small style="color:var(--ink-muted); font-size:12px;">' + new Date(s.timestamp).toLocaleDateString() + ' • ' + esc(s.payment_method||'Transfer') + ' • ' + cName + '</small>' +
+        '<small style="color:var(--ink-muted); font-size:12px;">' + new Date(s.timestamp).toLocaleDateString() + ' • ' + esc(s.payment_method||'Bank Transfer') + ' • ' + cName + '</small>' +
       '</div>' +
       '<div style="text-align:right;">' +
         '<strong style="font-size:15px; color:var(--gold-light);">' + money(s.total) + '</strong><br>' +
@@ -481,6 +481,9 @@ function renderReportFilterScreen(){
   var workerOpts = '<option value="">All Staff / Users</option>' + 
     cachedWorkers.map(function(w){ return '<option value="' + esc(w.username) + '">' + esc(w.name) + ' (@' + esc(w.username) + ')</option>'; }).join('');
 
+  var payMethodOpts = '<option value="">All Payment Methods</option>' +
+    PAY_METHODS.map(function(m){ return '<option value="' + m + '">' + m + '</option>'; }).join('');
+
   var html = '<div class="card">' +
     '<h3 style="margin:0 0 4px 0;">Dynamic Sales Report Filter</h3>' +
     '<p class="subtitle" style="text-align:left; margin:0 0 10px 0;">Filter records before viewing or exporting to Excel</p>' +
@@ -500,6 +503,8 @@ function renderReportFilterScreen(){
       '<div class="field"><label>Start Date</label><input type="date" id="rpt-start"></div>' +
       '<div class="field"><label>End Date</label><input type="date" id="rpt-end"></div>' +
     '</div>' +
+
+    '<div class="field"><label>Payment Method</label><select id="rpt-pay">' + payMethodOpts + '</select></div>' +
 
     '<div class="field"><label>Salesperson / Worker</label><select id="rpt-worker">' + workerOpts + '</select></div>' +
 
@@ -537,6 +542,7 @@ function toggleCustomDates(){
 
 function getFilteredData(){
   var period = document.getElementById('rpt-period').value;
+  var payMethod = document.getElementById('rpt-pay').value;
   var worker = document.getElementById('rpt-worker').value;
   var custType = document.getElementById('rpt-cust').value;
   var category = document.getElementById('rpt-cat').value;
@@ -564,6 +570,8 @@ function getFilteredData(){
   return cachedSales.filter(function(s){
     var sDate = new Date(s.timestamp);
     if(sDate < start || sDate > end) return false;
+
+    if(payMethod && (s.payment_method !== payMethod)) return false;
 
     if(worker && (s.worker_username !== worker && s.worker_name !== worker)) return false;
 
