@@ -42,6 +42,60 @@
     padding: 32px 20px;
   }
 
+  /* Watch dial animation mark */
+  .dial {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+  .dial-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(139, 111, 47, 0.35);
+  }
+  .tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    border-radius: 1px;
+    transform-origin: 50% 50%;
+  }
+  .tick.major { height: 15px; background: var(--gold); }
+  .tick.minor { height: 8px; width: 1.5px; background: #C9BFA0; }
+  .hand {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 33px;
+    background: var(--gold);
+    border-radius: 1px;
+    transform-origin: 50% 100%;
+    transform: translate(-50%, -100%) rotate(0deg);
+    animation: sweep 9s linear infinite;
+  }
+  .pivot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes sweep {
+    from { transform: translate(-50%, -100%) rotate(0deg); }
+    to   { transform: translate(-50%, -100%) rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hand { animation: none; }
+  }
+
   .screen {
     width: 100%;
     max-width: 360px;
@@ -147,6 +201,14 @@
 
   .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+  .footnote {
+    margin-top: 30px;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    color: #B3AB94;
+    text-align: center;
+  }
+
   .dashboard { width: 100%; max-width: 600px; }
   .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .tabs { display: flex; gap: 8px; margin: 16px 0; overflow-x: auto; }
@@ -177,6 +239,27 @@ const catOpts = function(includeAll){
   var opts = CATEGORIES.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join('');
   return includeAll ? '<option value="">All Categories</option>' + opts : opts;
 };
+
+function brandDialHeader(){
+  return '<div class="dial" aria-hidden="true">' +
+    '<div class="dial-ring"></div>' +
+    '<div class="tick major" style="transform: rotate(0deg) translateY(-40px);"></div>' +
+    '<div class="tick major" style="transform: rotate(90deg) translateY(-40px);"></div>' +
+    '<div class="tick major" style="transform: rotate(180deg) translateY(-40px);"></div>' +
+    '<div class="tick major" style="transform: rotate(270deg) translateY(-40px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(30deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(60deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(120deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(150deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(210deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(240deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(300deg) translateY(-43px);"></div>' +
+    '<div class="tick minor" style="transform: rotate(330deg) translateY(-43px);"></div>' +
+    '<div class="hand"></div>' +
+    '<div class="pivot"></div>' +
+  '</div>' +
+  '<h1 class="wordmark">WatchPlugNG</h1>';
+}
 
 function pwdInputHtml(id, placeholder){
   var ph = placeholder || 'Password';
@@ -225,16 +308,42 @@ async function boot(){
 
 function render(){ user.role === 'owner' ? renderOwner() : renderWorker(); }
 
+function renderSetup(){
+  app.innerHTML = '<div class="screen">' +
+    brandDialHeader() +
+    '<div class="subtitle">First-time setup — create your owner account</div>' +
+    '<form class="card" id="setupForm">' +
+      '<div class="field"><label>Your name</label><input id="s-name" required></div>' +
+      '<div class="field"><label>Username</label><input id="s-user" required></div>' +
+      '<div class="field"><label>Password</label>' + pwdInputHtml('s-pass') + '</div>' +
+      '<div id="s-err" class="err"></div>' +
+      '<button type="submit" class="submit">Create owner account</button>' +
+    '</form>' +
+    '<div class="footnote">Every second, tracked.</div>' +
+  '</div>';
+
+  document.getElementById('setupForm').onsubmit = async function(e){
+    e.preventDefault();
+    try{
+      await api('setup', { method:'POST', body: JSON.stringify({name: document.getElementById('s-name').value.trim(), username: document.getElementById('s-user').value.trim(), password: document.getElementById('s-pass').value}) });
+      var r = await api('login', { method:'POST', body: JSON.stringify({username: document.getElementById('s-user').value.trim(), password: document.getElementById('s-pass').value}) });
+      token = r.token; localStorage.setItem('st_token', token); user = r;
+      render();
+    }catch(err){ document.getElementById('s-err').textContent = err.message; }
+  };
+}
+
 function renderLogin(){
   app.innerHTML = '<div class="screen">' +
-    '<h1 class="wordmark">WatchPlugNG</h1>' +
-    '<div class="subtitle">Log in to view reports or log sales</div>' +
+    brandDialHeader() +
+    '<div class="subtitle">Log in to record or view sales</div>' +
     '<form class="card" id="loginForm">' +
       '<div class="field"><label>Username</label><input id="l-user" required></div>' +
       '<div class="field"><label>Password</label>' + pwdInputHtml('l-pass') + '</div>' +
       '<div id="l-err" class="err"></div>' +
       '<button type="submit" class="submit">Log in</button>' +
     '</form>' +
+    '<div class="footnote">Every second, tracked.</div>' +
   '</div>';
 
   document.getElementById('loginForm').onsubmit = async function(e){
@@ -275,6 +384,36 @@ function wireSaleForm(onDone){
       onDone();
     }catch(err){ errEl.textContent = err.message; }
   };
+}
+
+async function renderWorker(){
+  app.innerHTML = '<div class="dashboard">' +
+    '<div class="row"><h1>Hi, ' + esc(user.name) + '</h1><button class="secondary" onclick="logout()">Log out</button></div>' +
+    '<div class="subtitle" style="text-align:left; margin-bottom: 12px;">Log a sale</div>' +
+    '<div class="card">' + saleFormHtml() + '</div>' +
+    '<div class="subtitle" style="text-align:left; margin: 20px 0 12px;">Your recent sales</div>' +
+    '<div class="card table-wrap" id="w-list"><div class="empty">Loading…</div></div>' +
+  '</div>';
+
+  wireSaleForm(renderWorker);
+  try{
+    var mine = await api('sales');
+    document.getElementById('w-list').innerHTML = mine.length ? salesTable(mine, false) : '<div class="empty">No sales logged yet.</div>';
+  }catch(e){}
+}
+
+function salesTable(list, showWorker){
+  var rows = list.map(function(s){
+    return '<tr>' + (showWorker ? '<td>' + esc(s.worker_name) + '</td>' : '') + '<td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+  }).join('');
+  return '<table><thead><tr>' + (showWorker ? '<th>Worker</th>' : '') + '<th>Item</th><th>Cat</th><th>Qty</th><th>Total</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function stockTable(list){
+  var rows = list.map(function(s){
+    return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + esc(s.vendor||'—') + '</td><td>' + s.qty + '</td><td>' + esc(s.added_by) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+  }).join('');
+  return '<table><thead><tr><th>Item</th><th>Cat</th><th>Vendor</th><th>Qty</th><th>Added by</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 async function renderOwner(){
