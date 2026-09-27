@@ -217,10 +217,11 @@
   th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); }
   th { color: var(--ink-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
   .table-wrap { overflow-x: auto; }
-  .total-card { background: var(--input-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--line); margin-top: 10px; display: flex; justify-content: space-between; font-weight: 700; }
+  .total-card { background: var(--input-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--line); margin-top: 10px; display: flex; justify-content: space-between; font-weight: 700; align-items: center; }
   .err { color: var(--danger); font-size: 0.85rem; margin-top: 4px; }
   .empty { color: var(--ink-muted); font-size: 0.85rem; text-align: center; padding: 20px 0; }
   .badge { background: #E7DFCB; color: #241F16; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+  .wa-btn { background: #25D366; color: white; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 </style>
 </head>
 <body>
@@ -229,9 +230,11 @@
 
 <script>
 const CATEGORIES = ['Wrist Watches','Cufflinks','Jersey Scarves','Sneakers','Jewellery'];
+const PAY_METHODS = ['Bank Transfer', 'POS / Card', 'Cash'];
 const app = document.getElementById('app');
 let user = null, token = localStorage.getItem('st_token');
 let ownerTab = 'reports';
+let lastFetchedReportData = [];
 
 const money = function(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); };
 const esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
@@ -363,10 +366,18 @@ async function logout(){
 }
 
 function saleFormHtml(){
+  var pmOpts = PAY_METHODS.map(function(m){ return '<option value="' + m + '">' + m + '</option>'; }).join('');
   return '<div class="field"><label>Category</label><select id="w-cat">' + catOpts(false) + '</select></div>' +
-    '<div class="field"><label>Item Name</label><input id="w-item" placeholder="e.g. Silver cufflink set"></div>' +
-    '<div class="field"><label>Price (per item)</label><input id="w-price" type="number" min="0" step="0.01"></div>' +
-    '<div class="field"><label>Quantity</label><input id="w-qty" type="number" min="1" value="1"></div>' +
+    '<div class="field"><label>Item Name</label><input id="w-item" placeholder="e.g. Rolex Datejust Silver"></div>' +
+    '<div class="filter-grid">' +
+      '<div class="field"><label>Price (₦)</label><input id="w-price" type="number" min="0" step="0.01"></div>' +
+      '<div class="field"><label>Quantity</label><input id="w-qty" type="number" min="1" value="1"></div>' +
+    '</div>' +
+    '<div class="field"><label>Payment Method</label><select id="w-pay">' + pmOpts + '</select></div>' +
+    '<div class="filter-grid">' +
+      '<div class="field"><label>Customer Name</label><input id="w-cname" placeholder="Optional"></div>' +
+      '<div class="field"><label>WhatsApp Phone</label><input id="w-cphone" placeholder="e.g. 2348012345678"></div>' +
+    '</div>' +
     '<div id="w-err" class="err"></div>' +
     '<button type="button" class="submit" id="w-btn">Log Sale</button>';
 }
@@ -377,10 +388,22 @@ function wireSaleForm(onDone){
     var item = document.getElementById('w-item').value.trim();
     var price = parseFloat(document.getElementById('w-price').value);
     var qty = parseInt(document.getElementById('w-qty').value, 10) || 1;
+    var payment_method = document.getElementById('w-pay').value;
+    var customer_name = document.getElementById('w-cname').value.trim();
+    var customer_phone = document.getElementById('w-cphone').value.trim();
+
     var errEl = document.getElementById('w-err');
     if(!item || isNaN(price) || price < 0){ errEl.textContent = 'Fill in item and a valid price.'; return; }
     try{
-      await api('sales', { method:'POST', body: JSON.stringify({category: category, item: item, price: price, qty: qty}) });
+      await api('sales', { method:'POST', body: JSON.stringify({
+        category: category, 
+        item: item, 
+        price: price, 
+        qty: qty, 
+        payment_method: payment_method,
+        customer_name: customer_name,
+        customer_phone: customer_phone
+      }) });
       onDone();
     }catch(err){ errEl.textContent = err.message; }
   };
@@ -402,11 +425,32 @@ async function renderWorker(){
   }catch(e){}
 }
 
+function getWhatsAppReceiptUrl(s){
+  var phone = (s.customer_phone || '').replace(/[^0-9]/g, '');
+  var text = 'Hello ' + (s.customer_name || 'Customer') + ',\n\n' +
+    'Thank you for shopping with WatchPlugNG! Here is your purchase summary:\n\n' +
+    '📦 Item: ' + s.item + '\n' +
+    '🏷️ Category: ' + s.category + '\n' +
+    '🔢 Qty: ' + s.qty + '\n' +
+    '💰 Total Paid: ' + money(s.total) + ' (' + (s.payment_method || 'Bank Transfer') + ')\n' +
+    '📅 Date: ' + new Date(s.timestamp).toLocaleDateString() + '\n\n' +
+    'Every second, tracked.';
+  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text);
+}
+
 function salesTable(list, showWorker){
   var rows = list.map(function(s){
-    return '<tr>' + (showWorker ? '<td>' + esc(s.worker_name) + '</td>' : '') + '<td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+    var waLink = s.customer_phone ? '<a href="' + getWhatsAppReceiptUrl(s) + '" target="_blank" class="wa-btn">Receipt 📲</a>' : '—';
+    return '<tr>' + 
+      (showWorker ? '<td>' + esc(s.worker_name) + '</td>' : '') + 
+      '<td>' + esc(s.item) + '<br><small style="color:var(--ink-muted)">' + esc(s.payment_method||'Transfer') + '</small></td>' + 
+      '<td>' + esc(s.category) + '</td>' + 
+      '<td>' + s.qty + '</td>' + 
+      '<td>' + money(s.total) + '</td>' + 
+      '<td>' + waLink + '</td>' + 
+    '</tr>';
   }).join('');
-  return '<table><thead><tr>' + (showWorker ? '<th>Worker</th>' : '') + '<th>Item</th><th>Cat</th><th>Qty</th><th>Total</th><th>When</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  return '<table><thead><tr>' + (showWorker ? '<th>Worker</th>' : '') + '<th>Item</th><th>Cat</th><th>Qty</th><th>Total</th><th>Receipt</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 async function renderOwner(){
@@ -428,6 +472,7 @@ function switchTab(t){ ownerTab = t; renderOwner(); }
 async function renderOwnerTab(){
   var el = document.getElementById('tab-content');
   if(ownerTab === 'reports'){
+    var pmOpts = '<option value="">All Payment Channels</option>' + PAY_METHODS.map(function(m){ return '<option value="' + m + '">' + m + '</option>'; }).join('');
     el.innerHTML = '<div class="card">' +
       '<div class="field"><label>Report Type</label><select id="rpt-type" onchange="toggleReportFields(); runReport();"><option value="sales">Sales Revenue Report</option><option value="stock">Stock Intake Report</option></select></div>' +
       '<label>Date Range Quick Filters</label>' +
@@ -444,6 +489,7 @@ async function renderOwnerTab(){
       '</div>' +
       '<div class="filter-grid">' +
         '<div class="field"><label>Category</label><select id="rpt-cat" onchange="runReport()">' + catOpts(true) + '</select></div>' +
+        '<div class="field" id="pay-filter-box"><label>Payment Channel</label><select id="rpt-pay" onchange="runReport()">' + pmOpts + '</select></div>' +
         '<div class="field" id="vendor-filter-box" style="display:none;"><label>Vendor Filter</label><input id="rpt-vendor" placeholder="Vendor name..." oninput="runReport()"></div>' +
       '</div>' +
     '</div>' +
@@ -506,18 +552,16 @@ async function loadWorkersRoster(){
     }
     
     var rows = list.map(function(w){
-      var created = w.created_at ? new Date(w.created_at).toLocaleDateString() : '—';
       var lastAct = w.last_activity ? new Date(w.last_activity).toLocaleDateString() : 'No entries yet';
       return '<tr>' +
         '<td><strong>' + esc(w.name) + '</strong><br><small style="color:var(--ink-muted)">@' + esc(w.username) + '</small></td>' +
         '<td><span class="badge">' + esc(w.role) + '</span></td>' +
         '<td>' + (w.total_entries || 0) + '</td>' +
         '<td>' + lastAct + '</td>' +
-        '<td>' + created + '</td>' +
       '</tr>';
     }).join('');
 
-    target.innerHTML = '<table><thead><tr><th>Name / User</th><th>Role</th><th>Entries</th><th>Last Active</th><th>Joined</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    target.innerHTML = '<table><thead><tr><th>Name / User</th><th>Role</th><th>Entries</th><th>Last Active</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }catch(e){
     document.getElementById('workers-table-box').innerHTML = '<div class="err">' + e.message + '</div>';
   }
@@ -526,9 +570,9 @@ async function loadWorkersRoster(){
 function toggleReportFields(){
   var type = document.getElementById('rpt-type').value;
   var vendorBox = document.getElementById('vendor-filter-box');
-  if(vendorBox){
-    vendorBox.style.display = (type === 'stock') ? 'block' : 'none';
-  }
+  var payBox = document.getElementById('pay-filter-box');
+  if(vendorBox) vendorBox.style.display = (type === 'stock') ? 'block' : 'none';
+  if(payBox) payBox.style.display = (type === 'sales') ? 'block' : 'none';
 }
 
 function setPreset(p){
@@ -559,15 +603,19 @@ async function runReport(){
   var to = document.getElementById('rpt-to').value;
   var cat = document.getElementById('rpt-cat').value;
   var vendorInput = document.getElementById('rpt-vendor');
+  var payInput = document.getElementById('rpt-pay');
   var vendor = vendorInput ? vendorInput.value : '';
+  var pay = payInput ? payInput.value : '';
 
   toggleReportFields();
 
   var query = '?from=' + from + '&to=' + to + '&category=' + encodeURIComponent(cat);
   if(type === 'stock') query += '&vendor=' + encodeURIComponent(vendor);
+  if(type === 'sales') query += '&payment_method=' + encodeURIComponent(pay);
 
   try{
     var list = await api(type + query);
+    lastFetchedReportData = list;
     var target = document.getElementById('rpt-results');
 
     if(!list.length){
@@ -579,21 +627,65 @@ async function runReport(){
       var totalRev = list.reduce(function(s, x){ return s + (x.total || 0); }, 0);
       var totalQty = list.reduce(function(s, x){ return s + (x.qty || 0); }, 0);
       var rows = list.map(function(s){
-        return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
+        return '<tr><td>' + esc(s.item) + '<br><small style="color:var(--ink-muted)">' + esc(s.payment_method||'Transfer') + '</small></td><td>' + esc(s.category) + '</td><td>' + s.qty + '</td><td>' + money(s.total) + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
       }).join('');
       target.innerHTML = '<table><thead><tr><th>Item</th><th>Cat</th><th>Qty</th><th>Total</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-        '<div class="total-card"><span>Total Units: ' + totalQty + '</span><span>Total Sales: ' + money(totalRev) + '</span></div>';
+        '<div class="total-card"><span>Total Units: ' + totalQty + ' | Sales: ' + money(totalRev) + '</span><button class="btn-sm" onclick="exportCSV(\'sales\')">📥 Export CSV</button></div>';
     } else {
       var totalStockQty = list.reduce(function(s, x){ return s + (x.qty || 0); }, 0);
       var rowsStock = list.map(function(s){
         return '<tr><td>' + esc(s.item) + '</td><td>' + esc(s.category) + '</td><td>' + esc(s.vendor || '—') + '</td><td>' + s.qty + '</td><td>' + new Date(s.timestamp).toLocaleDateString() + '</td></tr>';
       }).join('');
       target.innerHTML = '<table><thead><tr><th>Item</th><th>Cat</th><th>Vendor</th><th>Qty</th><th>Date</th></tr></thead><tbody>' + rowsStock + '</tbody></table>' +
-        '<div class="total-card"><span>Total Stock Entries: ' + list.length + '</span><span>Total Items Received: ' + totalStockQty + '</span></div>';
+        '<div class="total-card"><span>Total Items Received: ' + totalStockQty + '</span><button class="btn-sm" onclick="exportCSV(\'stock\')">📥 Export CSV</button></div>';
     }
   }catch(e){
     document.getElementById('rpt-results').innerHTML = '<div class="err">' + e.message + '</div>';
   }
+}
+
+function exportCSV(type){
+  if(!lastFetchedReportData.length) return alert('No data to export.');
+  var csvRows = [];
+  if(type === 'sales'){
+    csvRows.push(['Date', 'Worker', 'Category', 'Item', 'Qty', 'Unit Price', 'Total', 'Payment Method', 'Customer Name', 'Customer Phone']);
+    lastFetchedReportData.forEach(function(r){
+      csvRows.push([
+        new Date(r.timestamp).toLocaleDateString(),
+        '"' + (r.worker_name || '') + '"',
+        '"' + (r.category || '') + '"',
+        '"' + (r.item || '') + '"',
+        r.qty,
+        r.price,
+        r.total,
+        '"' + (r.payment_method || 'Bank Transfer') + '"',
+        '"' + (r.customer_name || '') + '"',
+        '"' + (r.customer_phone || '') + '"'
+      ]);
+    });
+  } else {
+    csvRows.push(['Date', 'Added By', 'Category', 'Item', 'Vendor', 'Qty']);
+    lastFetchedReportData.forEach(function(r){
+      csvRows.push([
+        new Date(r.timestamp).toLocaleDateString(),
+        '"' + (r.added_by || '') + '"',
+        '"' + (r.category || '') + '"',
+        '"' + (r.item || '') + '"',
+        '"' + (r.vendor || '') + '"',
+        r.qty
+      ]);
+    });
+  }
+
+  var csvString = csvRows.map(function(e){ return e.join(','); }).join('\n');
+  var blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'WatchPlugNG_' + type + '_report_' + new Date().toISOString().split('T')[0] + '.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 async function addWorker(){
