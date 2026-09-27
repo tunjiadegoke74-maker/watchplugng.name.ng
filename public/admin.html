@@ -9,19 +9,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #241F16;
-    --ink-muted: #7A7361;
-    --paper: #FAF7F0;
-    --card: #FFFFFF;
-    --line: #E7DFCB;
-    --gold: #8B6F2F;
-    --gold-light: #C9A76A;
-    --gold-hover: #6F5824;
-    --input-bg: #FBF9F3;
-    --focus: rgba(139, 111, 47, 0.35);
-    --danger: #B33;
-    --success: #137333;
-    --success-bg: #E6F4EA;
+    --ink: #f9fafb;
+    --ink-muted: #9ca3af;
+    --paper: #0b0f19;
+    --card: #111827;
+    --line: #1f2937;
+    --gold: #d97706;
+    --gold-light: #f59e0b;
+    --gold-hover: #b45309;
+    --input-bg: #1f2937;
+    --focus: rgba(217, 119, 6, 0.35);
+    --danger: #ef4444;
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.15);
   }
 
   * { box-sizing: border-box; }
@@ -46,7 +46,7 @@
   .dial {
     position: relative; width: 80px; height: 80px; margin-bottom: 12px; flex-shrink: 0;
   }
-  .dial-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(139, 111, 47, 0.35); }
+  .dial-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--gold); }
   .hand {
     position: absolute; left: 50%; top: 50%; width: 2px; height: 26px;
     background: var(--gold); border-radius: 1px; transform-origin: 50% 100%;
@@ -57,7 +57,7 @@
 
   .screen { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; }
 
-  h1.wordmark { margin: 0; font-family: 'Fraunces', serif; font-weight: 600; font-size: 24px; text-align: center; }
+  h1.wordmark { margin: 0; font-family: 'Fraunces', serif; font-weight: 600; font-size: 24px; text-align: center; color: var(--ink); }
   .subtitle { margin-top: 4px; font-size: 13px; color: var(--ink-muted); text-align: center; }
 
   .card {
@@ -82,13 +82,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
 
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-card { background: var(--input-bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
   .stat-card .label { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; font-weight: 600; }
-  .stat-card .value { font-size: 18px; font-weight: 700; margin-top: 4px; color: var(--ink); }
+  .stat-card .value { font-size: 18px; font-weight: 700; margin-top: 4px; color: var(--gold-light); }
 
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field label { font-size: 13px; color: var(--ink-muted); }
@@ -104,29 +104,30 @@
   .toggle-visibility { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; color: var(--ink-muted); }
 
   button.submit {
-    height: 44px; border-radius: 10px; border: none; background: var(--gold); color: #FFFDF8;
+    height: 44px; border-radius: 10px; border: none; background: var(--gold); color: #ffffff;
     font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer;
   }
   button.submit:hover { background: var(--gold-hover); }
 
   button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px; }
+  button.secondary:hover { background: var(--input-bg); }
 
   /* Tab Navigation Styling */
   .nav-tabs-wrapper { width: 100%; overflow-x: auto; padding-bottom: 4px; margin: 16px 0 8px; -webkit-overflow-scrolling: touch; }
   .tabs { display: flex; gap: 8px; width: max-content; }
   .tab { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--line); font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; background: var(--card); color: var(--ink-muted); }
-  .tab.active { background: var(--gold); color: #FFFDF8; border-color: var(--gold); }
+  .tab.active { background: var(--gold); color: #ffffff; border-color: var(--gold); }
 
   .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
   .badge.success { background: var(--success-bg); color: var(--success); }
-  .badge.danger { background: #FCE8E6; color: var(--danger); }
-  .badge.neutral { background: #E7DFCB; color: #241F16; }
+  .badge.danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+  .badge.neutral { background: var(--input-bg); color: var(--ink-muted); }
 
   .dashboard { width: 100%; max-width: 480px; }
   .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .err { color: var(--danger); font-size: 0.85rem; margin-top: 4px; }
   .empty { color: var(--ink-muted); font-size: 0.85rem; text-align: center; padding: 20px 0; }
-  .wa-btn { background: #25D366; color: white; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-top: 4px; }
+  .back-link { display: block; text-align: center; margin-top: 16px; color: var(--ink-muted); font-size: 13px; text-decoration: none; }
 </style>
 </head>
 <body>
@@ -206,6 +207,7 @@ function renderSetup(){
       '<div id="s-err" class="err"></div>' +
       '<button type="submit" class="submit">Create Account</button>' +
     '</form>' +
+    '<a href="/" class="back-link">← Back to Gateway</a>' +
   '</div>';
 
   document.getElementById('setupForm').onsubmit = async function(e){
@@ -222,13 +224,14 @@ function renderSetup(){
 function renderLogin(){
   app.innerHTML = '<div class="screen">' +
     brandDialHeader() +
-    '<div class="subtitle">Log in to record or view sales</div>' +
+    '<div class="subtitle">Staff Portal — Log in to record or view sales</div>' +
     '<form class="card" id="loginForm">' +
       '<div class="field"><label>Username</label><input id="l-user" required></div>' +
       '<div class="field"><label>Password</label>' + pwdInputHtml('l-pass') + '</div>' +
       '<div id="l-err" class="err"></div>' +
       '<button type="submit" class="submit">Log in</button>' +
     '</form>' +
+    '<a href="/" class="back-link">← Back to Gateway</a>' +
   '</div>';
 
   document.getElementById('loginForm').onsubmit = async function(e){
@@ -309,7 +312,7 @@ function salesCardList(list){
         '<small style="color:var(--ink-muted); font-size:12px;">' + new Date(s.timestamp).toLocaleDateString() + ' • ' + esc(s.payment_method||'Transfer') + '</small>' +
       '</div>' +
       '<div style="text-align:right;">' +
-        '<strong style="font-size:15px; color:var(--gold);">' + money(s.total) + '</strong><br>' +
+        '<strong style="font-size:15px; color:var(--gold-light);">' + money(s.total) + '</strong><br>' +
         '<small style="color:var(--ink-muted); font-size:12px;">Qty: ' + s.qty + '</small>' +
       '</div>' +
     '</div>';
