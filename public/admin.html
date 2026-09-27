@@ -147,6 +147,7 @@ const PAY_METHODS = ['Bank Transfer', 'POS / Card', 'Cash'];
 const app = document.getElementById('app');
 let user = null, token = localStorage.getItem('st_token');
 let ownerTab = 'dash';
+let cachedSales = [], cachedWorkers = [], cachedStock = [];
 
 const money = function(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); };
 const esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
@@ -267,7 +268,7 @@ function saleFormHtml(){
     '</div>' +
     '<div class="field"><label>Payment Method</label><select id="w-pay">' + pmOpts + '</select></div>' +
     '<div class="stat-grid">' +
-      '<div class="field"><label>Customer Name</label><input id="w-cname" placeholder="Optional"></div>' +
+      '<div class="field"><label>Customer Name</label><input id="w-cname" placeholder="Leave empty for Walk-In"></div>' +
       '<div class="field"><label>WhatsApp Phone</label><input id="w-cphone" placeholder="e.g. 2348180000000"></div>' +
     '</div>' +
     '<div id="w-err" class="err"></div>' +
@@ -281,7 +282,7 @@ function wireSaleForm(onDone){
     var price = parseFloat(document.getElementById('w-price').value);
     var qty = parseInt(document.getElementById('w-qty').value, 10) || 1;
     var payment_method = document.getElementById('w-pay').value;
-    var customer_name = document.getElementById('w-cname').value.trim();
+    var customer_name = document.getElementById('w-cname').value.trim() || 'Walk-In Customer';
     var customer_phone = document.getElementById('w-cphone').value.trim();
 
     var errEl = document.getElementById('w-err');
@@ -313,10 +314,11 @@ async function renderWorker(){
 
 function salesCardList(list){
   return '<div class="list-container">' + list.map(function(s){
+    var cName = s.customer_name ? esc(s.customer_name) : 'Walk-In Customer';
     return '<div class="list-card">' +
       '<div>' +
         '<strong style="font-size:15px; color:var(--ink);">' + esc(s.item) + '</strong><br>' +
-        '<small style="color:var(--ink-muted); font-size:12px;">' + new Date(s.timestamp).toLocaleDateString() + ' • ' + esc(s.payment_method||'Transfer') + '</small>' +
+        '<small style="color:var(--ink-muted); font-size:12px;">' + new Date(s.timestamp).toLocaleDateString() + ' • ' + esc(s.payment_method||'Transfer') + ' • ' + cName + '</small>' +
       '</div>' +
       '<div style="text-align:right;">' +
         '<strong style="font-size:15px; color:var(--gold-light);">' + money(s.total) + '</strong><br>' +
@@ -332,7 +334,7 @@ async function renderOwner(){
     '<div class="nav-tabs-wrapper">' +
       '<div class="tabs">' +
         '<div class="tab ' + (ownerTab==='dash'?'active':'') + '" onclick="switchTab(\'dash\')">Dashboard</div>' +
-        '<div class="tab ' + (ownerTab==='reports'?'active':'') + '" onclick="switchTab(\'reports\')">📊 Reports & Excel</div>' +
+        '<div class="tab ' + (ownerTab==='reports'?'active':'') + '" onclick="switchTab(\'reports\')">📊 Custom Reports</div>' +
         '<div class="tab ' + (ownerTab==='inventory'?'active':'') + '" onclick="switchTab(\'inventory\')">Inventory</div>' +
         '<div class="tab ' + (ownerTab==='history'?'active':'') + '" onclick="switchTab(\'history\')">Sales History</div>' +
         '<div class="tab ' + (ownerTab==='stock'?'active':'') + '" onclick="switchTab(\'stock\')">+ Stock</div>' +
@@ -369,16 +371,12 @@ async function renderOwnerTab(){
     } catch(e){ el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 
   } else if(ownerTab === 'reports'){
-    el.innerHTML = '<div class="card">' +
-      '<h3 style="margin:0 0 4px 0;">Export Sales Report</h3>' +
-      '<p class="subtitle" style="text-align:left; margin:0 0 10px 0;">Download sales records as Excel sheet</p>' +
-      '<button type="button" class="excel-btn" onclick="exportSalesExcel()">📥 Download Sales (.xlsx)</button>' +
-    '</div>' +
-    '<div class="card">' +
-      '<h3 style="margin:0 0 4px 0;">Export Stock Intake Report</h3>' +
-      '<p class="subtitle" style="text-align:left; margin:0 0 10px 0;">Download vendor stock intake records</p>' +
-      '<button type="button" class="excel-btn" onclick="exportStockExcel()">📥 Download Stock Intake (.xlsx)</button>' +
-    '</div>';
+    el.innerHTML = '<div class="empty">Preparing filters…</div>';
+    try {
+      cachedSales = await api('sales');
+      try { cachedWorkers = await api('workers'); } catch(e){ cachedWorkers = []; }
+      renderReportFilterScreen();
+    } catch(e){ el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 
   } else if(ownerTab === 'inventory'){
     el.innerHTML = '<div class="empty">Loading inventory balances…</div>';
@@ -453,54 +451,152 @@ async function renderOwnerTab(){
   }
 }
 
-async function exportSalesExcel(){
-  try {
-    var data = await api('sales');
-    if(!data.length){ alert('No sales records to export.'); return; }
-    
-    var formatted = data.map(function(s){
-      return {
-        'Date': new Date(s.timestamp).toLocaleDateString(),
-        'Category': s.category || '',
-        'Item Name': s.item || '',
-        'Price (NGN)': s.price || 0,
-        'Quantity': s.qty || 1,
-        'Total (NGN)': s.total || 0,
-        'Payment Method': s.payment_method || '',
-        'Logged By': s.worker_name || s.worker_username || '',
-        'Customer Name': s.customer_name || '',
-        'Customer Phone': s.customer_phone || ''
-      };
-    });
+function renderReportFilterScreen(){
+  var workerOpts = '<option value="">All Staff / Users</option>' + 
+    cachedWorkers.map(function(w){ return '<option value="' + esc(w.username) + '">' + esc(w.name) + ' (@' + esc(w.username) + ')</option>'; }).join('');
 
-    var ws = XLSX.utils.json_to_sheet(formatted);
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
-    XLSX.writeFile(wb, "WatchPlugNG_Sales_Report.xlsx");
-  } catch(e){ alert('Export failed: ' + e.message); }
+  var html = '<div class="card">' +
+    '<h3 style="margin:0 0 4px 0;">Dynamic Sales Report Filter</h3>' +
+    '<p class="subtitle" style="text-align:left; margin:0 0 10px 0;">Filter records before viewing or exporting to Excel</p>' +
+    
+    '<div class="field"><label>Date Period</label>' +
+      '<select id="rpt-period" onchange="toggleCustomDates()">' +
+        '<option value="all">All Time</option>' +
+        '<option value="today">Today</option>' +
+        '<option value="yesterday">Yesterday</option>' +
+        '<option value="this_week">This Week</option>' +
+        '<option value="this_month">This Month</option>' +
+        '<option value="custom">Custom Date Range...</option>' +
+      '</select>' +
+    '</div>' +
+
+    '<div id="custom-date-box" class="stat-grid" style="display:none;">' +
+      '<div class="field"><label>Start Date</label><input type="date" id="rpt-start"></div>' +
+      '<div class="field"><label>End Date</label><input type="date" id="rpt-end"></div>' +
+    '</div>' +
+
+    '<div class="field"><label>Salesperson / Worker</label><select id="rpt-worker">' + workerOpts + '</select></div>' +
+
+    '<div class="field"><label>Customer Type</label>' +
+      '<select id="rpt-cust">' +
+        '<option value="all">All Customers</option>' +
+        '<option value="walkin">Walk-In Customers Only</option>' +
+        '<option value="registered">Named / Phone Contact Customers</option>' +
+      '</select>' +
+    '</div>' +
+
+    '<div class="field"><label>Item Category</label><select id="rpt-cat">' + catOpts(true) + '</select></div>' +
+
+    '<div class="stat-grid" style="margin-top:6px;">' +
+      '<button type="button" class="submit" onclick="applyReportFilter()">Filter View</button>' +
+      '<button type="button" class="excel-btn" onclick="exportFilteredExcel()">📥 Export Excel</button>' +
+    '</div>' +
+  '</div>' +
+
+  '<div id="filtered-results-summary" class="stat-grid" style="margin-top:14px; display:none;">' +
+    '<div class="stat-card"><div class="label">Filtered Total</div><div class="value" id="res-total">₦0</div></div>' +
+    '<div class="stat-card"><div class="label">Items Sold</div><div class="value" id="res-qty">0</div></div>' +
+  '</div>' +
+
+  '<div id="filtered-sales-list" style="margin-top:14px;"></div>';
+
+  document.getElementById('tab-content').innerHTML = html;
+  applyReportFilter();
 }
 
-async function exportStockExcel(){
-  try {
-    var data = await api('stock');
-    if(!data.length){ alert('No stock intake records to export.'); return; }
-    
-    var formatted = data.map(function(st){
-      return {
-        'Date': new Date(st.timestamp).toLocaleDateString(),
-        'Category': st.category || '',
-        'Item Name': st.item || '',
-        'Vendor': st.vendor || '',
-        'Quantity Added': st.qty || 0,
-        'Recorded By': st.worker_name || st.worker_username || ''
-      };
-    });
+function toggleCustomDates(){
+  var p = document.getElementById('rpt-period').value;
+  document.getElementById('custom-date-box').style.display = (p === 'custom') ? 'grid' : 'none';
+}
 
-    var ws = XLSX.utils.json_to_sheet(formatted);
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Stock Intake Report");
-    XLSX.writeFile(wb, "WatchPlugNG_Stock_Intake_Report.xlsx");
-  } catch(e){ alert('Export failed: ' + e.message); }
+function getFilteredData(){
+  var period = document.getElementById('rpt-period').value;
+  var worker = document.getElementById('rpt-worker').value;
+  var custType = document.getElementById('rpt-cust').value;
+  var category = document.getElementById('rpt-cat').value;
+
+  var now = new Date();
+  var start = new Date(0), end = new Date();
+
+  if(period === 'today'){
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if(period === 'yesterday'){
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if(period === 'this_week'){
+    var day = now.getDay();
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+  } else if(period === 'this_month'){
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else if(period === 'custom'){
+    var sVal = document.getElementById('rpt-start').value;
+    var eVal = document.getElementById('rpt-end').value;
+    if(sVal) start = new Date(sVal);
+    if(eVal) { end = new Date(eVal); end.setHours(23,59,59,999); }
+  }
+
+  return cachedSales.filter(function(s){
+    var sDate = new Date(s.timestamp);
+    if(sDate < start || sDate > end) return false;
+
+    if(worker && (s.worker_username !== worker && s.worker_name !== worker)) return false;
+
+    if(category && s.category !== category) return false;
+
+    var isWalkIn = !s.customer_name || s.customer_name.toLowerCase().includes('walk-in');
+    if(custType === 'walkin' && !isWalkIn) return false;
+    if(custType === 'registered' && isWalkIn) return false;
+
+    return true;
+  });
+}
+
+function applyReportFilter(){
+  var filtered = getFilteredData();
+  var listEl = document.getElementById('filtered-sales-list');
+  var summaryEl = document.getElementById('filtered-results-summary');
+
+  if(!filtered.length){
+    summaryEl.style.display = 'none';
+    listEl.innerHTML = '<div class="empty">No sales match your selected filters.</div>';
+    return;
+  }
+
+  var totalAmt = filtered.reduce(function(sum, item){ return sum + (item.total || 0); }, 0);
+  var totalQty = filtered.reduce(function(sum, item){ return sum + (item.qty || 1); }, 0);
+
+  document.getElementById('res-total').textContent = money(totalAmt);
+  document.getElementById('res-qty').textContent = totalQty;
+  summaryEl.style.display = 'grid';
+
+  listEl.innerHTML = salesCardList(filtered);
+}
+
+function exportFilteredExcel(){
+  var filtered = getFilteredData();
+  if(!filtered.length){ alert('No records found for your selected filter.'); return; }
+
+  var formatted = filtered.map(function(s){
+    var cName = s.customer_name ? s.customer_name : 'Walk-In Customer';
+    return {
+      'Date': new Date(s.timestamp).toLocaleDateString(),
+      'Time': new Date(s.timestamp).toLocaleTimeString(),
+      'Category': s.category || '',
+      'Item Name': s.item || '',
+      'Price (NGN)': s.price || 0,
+      'Quantity': s.qty || 1,
+      'Total Sales (NGN)': s.total || 0,
+      'Payment Method': s.payment_method || 'Bank Transfer',
+      'Salesperson / Worker': s.worker_name || s.worker_username || 'Owner',
+      'Customer Name': cName,
+      'Customer Phone': s.customer_phone || 'N/A'
+    };
+  });
+
+  var ws = XLSX.utils.json_to_sheet(formatted);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Filtered Sales Report");
+  XLSX.writeFile(wb, "WatchPlugNG_Filtered_Report.xlsx");
 }
 
 async function loadWorkersRoster(){
